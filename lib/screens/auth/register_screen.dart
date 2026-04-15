@@ -38,7 +38,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 12),
             Text(
               'Create account',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 20),
             Form(
@@ -71,7 +73,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextFormField(
                     controller: _confirm,
                     obscureText: true,
-                    decoration: const InputDecoration(labelText: 'Confirm password'),
+                    decoration: const InputDecoration(
+                      labelText: 'Confirm password',
+                    ),
                     validator: (v) {
                       if ((v ?? '').isEmpty) return 'Confirm your password';
                       if (v != _password.text) return 'Passwords do not match';
@@ -96,10 +100,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               onPressed: () async {
                 if (!_formKey.currentState!.validate()) return;
                 await context.read<AuthProvider>().register(
-                      email: _email.text.trim(),
-                      password: _password.text,
-                    );
-                if (context.mounted && context.read<AuthProvider>().user != null) {
+                  email: _email.text.trim(),
+                  password: _password.text,
+                );
+                if (context.mounted &&
+                    context.read<AuthProvider>().user != null) {
                   Navigator.of(context).pop();
                 }
               },
@@ -110,4 +115,3 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
-

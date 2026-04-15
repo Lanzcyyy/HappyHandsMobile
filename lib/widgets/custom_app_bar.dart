@@ -10,20 +10,24 @@ import '../core/constants/app_constants.dart';
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final bool showSearch;
+  final bool showBackButton;
   final TextEditingController? searchController;
   final Function(String)? onSearchChanged;
   final VoidCallback? onCartTap;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onBackTap;
   final List<Widget>? actions;
 
   const CustomAppBar({
     Key? key,
     required this.title,
     this.showSearch = false,
+    this.showBackButton = false,
     this.searchController,
     this.onSearchChanged,
     this.onCartTap,
     this.onProfileTap,
+    this.onBackTap,
     this.actions,
   }) : super(key: key);
 
@@ -50,6 +54,17 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             // Main App Bar
             Row(
               children: [
+                // Back Button
+                if (showBackButton)
+                  IconButton(
+                    onPressed: onBackTap ?? () => Navigator.pop(context),
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: AppTheme.darkBlue,
+                    ),
+                    tooltip: 'Back',
+                  ),
+
                 // Logo/Title
                 Expanded(
                   child: Text(
@@ -60,13 +75,15 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
                 ),
-                
+
                 // Search Bar (if shown)
                 if (showSearch)
                   Expanded(
                     flex: 2,
                     child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: AppConstants.spacingMD),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: AppConstants.spacingMD,
+                      ),
                       child: TextField(
                         controller: searchController,
                         onChanged: onSearchChanged,
@@ -80,7 +97,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                           filled: true,
                           fillColor: AppTheme.lightGray,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppConstants.radiusFull),
+                            borderRadius: BorderRadius.circular(
+                              AppConstants.radiusFull,
+                            ),
                             borderSide: BorderSide.none,
                           ),
                           contentPadding: const EdgeInsets.symmetric(
@@ -91,7 +110,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       ),
                     ),
                   ),
-                
+
                 // Action Buttons
                 Row(
                   children: [
@@ -123,7 +142,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                         ],
                       ),
                     ),
-                    
+
                     // Cart Button
                     Consumer<CartProvider>(
                       builder: (context, cartProvider, child) {
@@ -142,7 +161,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                                   top: 0,
                                   right: 0,
                                   child: Container(
-                                    constraints: const BoxConstraints(minWidth: 18),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 18,
+                                    ),
                                     height: 18,
                                     decoration: BoxDecoration(
                                       color: AppTheme.errorRed,
@@ -150,14 +171,17 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                                     ),
                                     child: Center(
                                       child: Text(
-                                        cartProvider.itemCount > 99 
-                                            ? '99+' 
+                                        cartProvider.itemCount > 99
+                                            ? '99+'
                                             : '${cartProvider.itemCount}',
-                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                          color: AppTheme.white,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 10,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelSmall
+                                            ?.copyWith(
+                                              color: AppTheme.white,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 10,
+                                            ),
                                       ),
                                     ),
                                   ),
@@ -167,7 +191,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                         );
                       },
                     ),
-                    
+
                     // Profile Button
                     Consumer<AuthProvider>(
                       builder: (context, authProvider, child) {
@@ -190,43 +214,49 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                                     child: Image.network(
                                       authProvider.user!.photoURL!,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return _buildAvatarPlaceholder(context, authProvider);
-                                      },
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                            return _buildAvatarPlaceholder(
+                                              context,
+                                              authProvider,
+                                            );
+                                          },
                                     ),
                                   )
-                                : _buildAvatarPlaceholder(context, authProvider),
+                                : _buildAvatarPlaceholder(
+                                    context,
+                                    authProvider,
+                                  ),
                           ),
                         );
                       },
                     ),
-                    
+
                     // Additional Actions
                     if (actions != null) ...actions!,
                   ],
                 ),
               ],
             ),
-            
+
             // Bottom Divider
-            const Divider(
-              height: 1,
-              thickness: 1,
-              color: AppTheme.borderGray,
-            ),
+            const Divider(height: 1, thickness: 1, color: AppTheme.borderGray),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAvatarPlaceholder(BuildContext context, AuthProvider authProvider) {
+  Widget _buildAvatarPlaceholder(
+    BuildContext context,
+    AuthProvider authProvider,
+  ) {
     final initial = authProvider.user?.displayName?.isNotEmpty == true
         ? authProvider.user!.displayName![0].toUpperCase()
         : authProvider.user?.email?.isNotEmpty == true
-            ? authProvider.user!.email![0].toUpperCase()
-            : 'U';
-            
+        ? authProvider.user!.email![0].toUpperCase()
+        : 'U';
+
     return Center(
       child: Text(
         initial,
