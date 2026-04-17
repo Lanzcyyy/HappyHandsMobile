@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../providers/auth_provider.dart';
 import '../../providers/rider_provider.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_widget.dart';
@@ -44,7 +45,24 @@ class _RiderDashboardScreen extends StatelessWidget {
   const _RiderDashboardScreen();
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Rider Dashboard')),
+        appBar: AppBar(
+          title: const Text('Rider Dashboard'),
+          actions: [
+            IconButton(
+              tooltip: 'Logout',
+              onPressed: () async {
+                await context.read<AuthProvider>().logout();
+                if (!context.mounted) return;
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/home',
+                  (route) => false,
+                );
+              },
+              icon: const Icon(Icons.logout),
+            ),
+          ],
+        ),
         body: const Center(child: Text('Next: rider stats endpoints')),
       );
 }
@@ -61,7 +79,20 @@ class _RiderOrdersScreen extends StatelessWidget {
           IconButton(
             onPressed: rider.isLoading ? null : () => context.read<RiderProvider>().loadOrders(),
             icon: const Icon(Icons.refresh),
-          )
+          ),
+          IconButton(
+            tooltip: 'Logout',
+            onPressed: () async {
+              await context.read<AuthProvider>().logout();
+              if (!context.mounted) return;
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+            },
+            icon: const Icon(Icons.logout),
+          ),
         ],
       ),
       body: Builder(
@@ -105,7 +136,24 @@ class _RiderNotificationsScreen extends StatelessWidget {
   const _RiderNotificationsScreen();
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Notifications')),
+        appBar: AppBar(
+          title: const Text('Notifications'),
+          actions: [
+            IconButton(
+              tooltip: 'Logout',
+              onPressed: () async {
+                await context.read<AuthProvider>().logout();
+                if (!context.mounted) return;
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/home',
+                  (route) => false,
+                );
+              },
+              icon: const Icon(Icons.logout),
+            ),
+          ],
+        ),
         body: const Center(child: Text('Next: rider notifications')),
       );
 }
@@ -114,7 +162,24 @@ class _RiderProfileScreen extends StatelessWidget {
   const _RiderProfileScreen();
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Rider Profile')),
+        appBar: AppBar(
+          title: const Text('Rider Profile'),
+          actions: [
+            IconButton(
+              tooltip: 'Logout',
+              onPressed: () async {
+                await context.read<AuthProvider>().logout();
+                if (!context.mounted) return;
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/home',
+                  (route) => false,
+                );
+              },
+              icon: const Icon(Icons.logout),
+            ),
+          ],
+        ),
         body: const Center(child: Text('Next: rider profile/settings')),
       );
 }

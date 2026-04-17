@@ -9,7 +9,7 @@ import '../core/theme/app_theme.dart';
 import '../core/constants/app_constants.dart';
 
 class CheckoutScreen extends StatefulWidget {
-  const CheckoutScreen({Key? key}) : super(key: key);
+  const CheckoutScreen({super.key});
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -171,7 +171,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ],
               ),
             );
-          }).toList(),
+          }),
           
           const Divider(height: AppConstants.spacingLG),
           

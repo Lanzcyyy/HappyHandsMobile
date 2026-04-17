@@ -9,7 +9,7 @@ import 'auth/seller_auth_screen.dart';
 import 'auth/rider_auth_screen.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
-  const RoleSelectionScreen({Key? key}) : super(key: key);
+  const RoleSelectionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

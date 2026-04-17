@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
+import '../../core/network/api_client.dart';
+import '../../core/constants/app_constants.dart';
 import '../../models/category.dart';
 import '../../models/product.dart';
+import '../../models/api_response.dart';
 import '../../services/flask_api_service.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_widget.dart';
@@ -38,7 +40,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       _error = null;
     });
     try {
-      final api = context.read<FlaskApiService>();
+      final api = FlaskApiService(ApiClient(tokenProvider: () async => null));
       final res = await api.fetchCategory(_slug);
       if (!mounted) return;
       setState(() {
@@ -47,11 +49,56 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         _loading = false;
       });
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString();
-        _loading = false;
-      });
+      try {
+        final api = ApiClient(tokenProvider: () async => null);
+        final response = await api.getJson(
+          '/products',
+          query: {'page': '1', 'page_size': '24', 'category': _slug},
+        );
+
+        final parsed = ApiResponse.fromJson<Map<String, dynamic>>(response, (
+          data,
+        ) {
+          return (data as Map<String, dynamic>?) ?? <String, dynamic>{};
+        });
+
+        final dynamic responseData = response['data'];
+        final dynamic payload = parsed.data ?? responseData ?? response;
+        final List<dynamic> productsRaw = payload is Map<String, dynamic>
+            ? (payload['items'] as List<dynamic>? ??
+                  payload['products'] as List<dynamic>? ??
+                  const [])
+            : payload is List<dynamic>
+            ? payload
+            : const [];
+        final products = productsRaw
+            .whereType<Map<String, dynamic>>()
+            .map(Product.fromJson)
+            .toList();
+
+        if (!mounted) return;
+        setState(() {
+          _categories = AppConstants.categories
+              .map(
+                (entry) => Category(
+                  slug: entry['id'] ?? '',
+                  name: entry['name'] ?? '',
+                ),
+              )
+              .toList();
+          _products = products;
+          _loading = false;
+          _error = products.isEmpty
+              ? 'No products found for this category.'
+              : null;
+        });
+      } catch (fallbackError) {
+        if (!mounted) return;
+        setState(() {
+          _error = fallbackError.toString();
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -61,18 +108,26 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       appBar: AppBar(title: const Text('Categories')),
       body: Builder(
         builder: (_) {
-          if (_loading) return const LoadingWidget(label: 'Loading category...');
-          if (_error != null) return ErrorView(message: _error!, onRetry: _load);
+          if (_loading) {
+            return const LoadingWidget(label: 'Loading category...');
+          }
+          if (_error != null) {
+            return ErrorView(message: _error!, onRetry: _load);
+          }
 
           return Column(
             children: [
               SizedBox(
                 height: 48,
                 child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   scrollDirection: Axis.horizontal,
                   itemCount: _categories.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 8),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 8),
                   itemBuilder: (context, index) {
                     final c = _categories[index];
                     final selected = c.slug == _slug;
@@ -103,7 +158,10 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                       product: p,
                       onTap: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => ProductDetailScreen(productId: p.id)),
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ProductDetailScreen(productId: p.id),
+                          ),
                         );
                       },
                     );
@@ -117,4 +175,3 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     );
   }
 }
-

@@ -7,17 +7,200 @@ import '../widgets/custom_app_bar.dart';
 import '../core/theme/app_theme.dart';
 import '../core/constants/app_constants.dart';
 
-class AuthScreen extends StatefulWidget {
-  const AuthScreen({Key? key}) : super(key: key);
+enum AuthRole { user, seller, rider }
 
-  @override
-  State<AuthScreen> createState() => _AuthScreenState();
+extension AuthRoleX on AuthRole {
+  String get displayName => switch (this) {
+    AuthRole.user => 'User',
+    AuthRole.seller => 'Seller',
+    AuthRole.rider => 'Rider',
+  };
+
+  String get appBarTitle => switch (this) {
+    AuthRole.user => 'Authentication',
+    AuthRole.seller => 'Seller Authentication',
+    AuthRole.rider => 'Rider Authentication',
+  };
+
+  String get headerSubtitle => switch (this) {
+    AuthRole.user => 'Your trusted baby essentials store',
+    AuthRole.seller => 'Manage your shop and connect with customers',
+    AuthRole.rider => 'Start delivering and earn flexibly',
+  };
+
+  String get loginTitle => switch (this) {
+    AuthRole.user => 'Welcome Back',
+    AuthRole.seller => 'Seller Login',
+    AuthRole.rider => 'Rider Login',
+  };
+
+  String get loginSubtitle => switch (this) {
+    AuthRole.user => 'Sign in to continue',
+    AuthRole.seller => 'Manage your shop',
+    AuthRole.rider => 'Start delivering and earn',
+  };
+
+  String get registerTitle => switch (this) {
+    AuthRole.user => 'Create account',
+    AuthRole.seller => 'Seller Register',
+    AuthRole.rider => 'Rider Register',
+  };
+
+  String get registerSubtitle => switch (this) {
+    AuthRole.user => 'Join Happy Hands today',
+    AuthRole.seller => 'Create your seller account',
+    AuthRole.rider => 'Create your rider account',
+  };
 }
 
-class _AuthScreenState extends State<AuthScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class AuthScreen extends StatelessWidget {
+  final AuthRole role;
 
+  const AuthScreen({super.key, this.role = AuthRole.user});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.white,
+      appBar: CustomAppBar(
+        title: 'Happy Hands',
+        showBackButton: true,
+        onBackTap: () {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/home',
+            (route) => false,
+          );
+        },
+      ),
+      body: SafeArea(
+        child: DefaultTabController(
+          length: 2,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.spacingMD,
+                  vertical: AppConstants.spacingSM,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AuthHeader(role: role),
+                    const SizedBox(height: AppConstants.spacingLG),
+                    const AuthToggle(),
+                    const SizedBox(height: AppConstants.spacingMD),
+                    Expanded(child: AuthForm(role: role)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class AuthHeader extends StatelessWidget {
+  final AuthRole role;
+
+  const AuthHeader({super.key, required this.role});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: 64,
+          height: 64,
+          decoration: const BoxDecoration(
+            color: AppTheme.primaryBlue,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            FontAwesomeIcons.baby,
+            color: AppTheme.white,
+            size: 30,
+          ),
+        ),
+        const SizedBox(height: AppConstants.spacingSM),
+        Text(
+          'Happy Hands',
+          style: Theme.of(context).textTheme.displayMedium?.copyWith(
+            color: AppTheme.darkBlue,
+            fontWeight: FontWeight.w800,
+            fontSize: 24,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          role.headerSubtitle,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: AppTheme.mediumGray,
+            fontSize: 13,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}
+
+class AuthToggle extends StatelessWidget {
+  const AuthToggle({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 46,
+      decoration: BoxDecoration(
+        color: AppTheme.lightGray,
+        borderRadius: BorderRadius.circular(AppConstants.radiusLG),
+      ),
+      child: TabBar(
+        isScrollable: false,
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelPadding: EdgeInsets.zero,
+        indicatorPadding: EdgeInsets.zero,
+        indicator: BoxDecoration(
+          color: AppTheme.primaryBlue,
+          borderRadius: BorderRadius.circular(AppConstants.radiusLG),
+        ),
+        labelColor: AppTheme.white,
+        unselectedLabelColor: AppTheme.mediumGray,
+        labelStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
+        unselectedLabelStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+        ),
+        tabs: const [
+          Tab(
+            child: SizedBox.expand(child: Center(child: Text('Login'))),
+          ),
+          Tab(
+            child: SizedBox.expand(child: Center(child: Text('Register'))),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AuthForm extends StatefulWidget {
+  final AuthRole role;
+
+  const AuthForm({super.key, required this.role});
+
+  @override
+  State<AuthForm> createState() => _AuthScreenState();
+}
+
+class _AuthScreenState extends State<AuthForm> {
   // Login form controllers
   final _loginEmailController = TextEditingController();
   final _loginPasswordController = TextEditingController();
@@ -43,10 +226,13 @@ class _AuthScreenState extends State<AuthScreen>
     return InputDecoration(
       labelText: labelText,
       hintText: hintText,
-      isDense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      filled: true,
+      fillColor: AppTheme.white,
+      isDense: false,
+      floatingLabelBehavior: FloatingLabelBehavior.auto,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       prefixIcon: Icon(prefixIcon, color: AppTheme.mediumGray, size: 18),
-      prefixIconConstraints: const BoxConstraints(minWidth: 42, minHeight: 42),
+      prefixIconConstraints: const BoxConstraints(minWidth: 44, minHeight: 44),
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppConstants.radiusMD),
@@ -63,14 +249,7 @@ class _AuthScreenState extends State<AuthScreen>
   }
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
   void dispose() {
-    _tabController.dispose();
     _loginEmailController.dispose();
     _loginPasswordController.dispose();
     _registerNameController.dispose();
@@ -82,47 +261,7 @@ class _AuthScreenState extends State<AuthScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.white,
-      appBar: CustomAppBar(
-        title: 'Authentication',
-        onCartTap: () => Navigator.pop(context),
-        onProfileTap: () => Navigator.pop(context),
-      ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.spacingMD,
-                vertical: AppConstants.spacingSM,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Logo and Title
-                  _buildHeader(),
-                  const SizedBox(height: AppConstants.spacingLG),
-
-                  // Tab Bar
-                  _buildTabBar(),
-                  const SizedBox(height: AppConstants.spacingMD),
-
-                  // Tab Content
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [_buildLoginForm(), _buildRegisterForm()],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    return TabBarView(children: [_buildLoginForm(), _buildRegisterForm()]);
   }
 
   Widget _buildHeader() {
@@ -178,7 +317,10 @@ class _AuthScreenState extends State<AuthScreen>
         borderRadius: BorderRadius.circular(AppConstants.radiusLG),
       ),
       child: TabBar(
-        controller: _tabController,
+        isScrollable: false,
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelPadding: EdgeInsets.zero,
+        indicatorPadding: EdgeInsets.zero,
         indicator: BoxDecoration(
           color: AppTheme.primaryBlue,
           borderRadius: BorderRadius.circular(AppConstants.radiusLG),
@@ -194,8 +336,12 @@ class _AuthScreenState extends State<AuthScreen>
           fontSize: 14,
         ),
         tabs: const [
-          Tab(text: 'Login'),
-          Tab(text: 'Register'),
+          Tab(
+            child: SizedBox.expand(child: Center(child: Text('Login'))),
+          ),
+          Tab(
+            child: SizedBox.expand(child: Center(child: Text('Register'))),
+          ),
         ],
       ),
     );
@@ -207,6 +353,7 @@ class _AuthScreenState extends State<AuthScreen>
         return SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.only(
+            top: AppConstants.spacingSM,
             bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
           child: Center(
@@ -218,6 +365,28 @@ class _AuthScreenState extends State<AuthScreen>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (widget.role != AuthRole.user) ...[
+                      Text(
+                        widget.role.loginTitle,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: AppTheme.darkBlue,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.role.loginSubtitle,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppTheme.mediumGray,
+                          fontSize: 13,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppConstants.spacingMD),
+                    ],
+
                     // Email Field
                     TextFormField(
                       controller: _loginEmailController,
@@ -240,7 +409,7 @@ class _AuthScreenState extends State<AuthScreen>
                       },
                     ),
 
-                    const SizedBox(height: AppConstants.spacingSM),
+                    const SizedBox(height: AppConstants.spacingMD),
 
                     // Password Field
                     TextFormField(
@@ -276,7 +445,7 @@ class _AuthScreenState extends State<AuthScreen>
                       },
                     ),
 
-                    const SizedBox(height: AppConstants.spacingXS),
+                    const SizedBox(height: AppConstants.spacingSM),
 
                     // Forgot Password
                     Align(
@@ -298,18 +467,21 @@ class _AuthScreenState extends State<AuthScreen>
                       ),
                     ),
 
-                    const SizedBox(height: AppConstants.spacingMD),
+                    const SizedBox(height: AppConstants.spacingLG),
 
                     // Login Button
                     SizedBox(
                       width: double.infinity,
-                      height: 46,
+                      height: 52,
                       child: ElevatedButton(
                         onPressed: authProvider.isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryBlue,
                           foregroundColor: AppTheme.white,
                           elevation: 0,
+                          minimumSize: const Size.fromHeight(52),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          tapTargetSize: MaterialTapTargetSize.padded,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
                               AppConstants.radiusLG,
@@ -387,6 +559,7 @@ class _AuthScreenState extends State<AuthScreen>
         return SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.only(
+            top: AppConstants.spacingSM,
             bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
           child: Center(
@@ -398,6 +571,28 @@ class _AuthScreenState extends State<AuthScreen>
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (widget.role != AuthRole.user) ...[
+                      Text(
+                        widget.role.registerTitle,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: AppTheme.darkBlue,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.role.registerSubtitle,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppTheme.mediumGray,
+                          fontSize: 13,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppConstants.spacingMD),
+                    ],
+
                     // Name Field
                     TextFormField(
                       controller: _registerNameController,
@@ -417,7 +612,7 @@ class _AuthScreenState extends State<AuthScreen>
                       },
                     ),
 
-                    const SizedBox(height: AppConstants.spacingSM),
+                    const SizedBox(height: AppConstants.spacingMD),
 
                     // Email Field
                     TextFormField(
@@ -441,7 +636,7 @@ class _AuthScreenState extends State<AuthScreen>
                       },
                     ),
 
-                    const SizedBox(height: AppConstants.spacingSM),
+                    const SizedBox(height: AppConstants.spacingMD),
 
                     // Password Field
                     TextFormField(
@@ -478,7 +673,7 @@ class _AuthScreenState extends State<AuthScreen>
                       },
                     ),
 
-                    const SizedBox(height: AppConstants.spacingSM),
+                    const SizedBox(height: AppConstants.spacingMD),
 
                     // Confirm Password Field
                     TextFormField(
@@ -515,12 +710,12 @@ class _AuthScreenState extends State<AuthScreen>
                       },
                     ),
 
-                    const SizedBox(height: AppConstants.spacingMD),
+                    const SizedBox(height: AppConstants.spacingLG),
 
                     // Register Button
                     SizedBox(
                       width: double.infinity,
-                      height: 46,
+                      height: 52,
                       child: ElevatedButton(
                         onPressed: authProvider.isLoading
                             ? null
@@ -529,6 +724,9 @@ class _AuthScreenState extends State<AuthScreen>
                           backgroundColor: AppTheme.primaryBlue,
                           foregroundColor: AppTheme.white,
                           elevation: 0,
+                          minimumSize: const Size.fromHeight(52),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          tapTargetSize: MaterialTapTargetSize.padded,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
                               AppConstants.radiusLG,
@@ -607,17 +805,12 @@ class _AuthScreenState extends State<AuthScreen>
     await authProvider.login(
       email: _loginEmailController.text.trim(),
       password: _loginPasswordController.text,
+      role: widget.role.name,
     );
 
     if (authProvider.error == null) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Login successful!'),
-          backgroundColor: AppTheme.successGreen,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      if (!mounted) return;
+      handleLoginSuccess(authProvider.activeRole ?? widget.role.name);
     }
   }
 
@@ -629,18 +822,23 @@ class _AuthScreenState extends State<AuthScreen>
       email: _registerEmailController.text.trim(),
       password: _registerPasswordController.text,
       displayName: _registerNameController.text.trim(),
+      role: widget.role.name,
     );
 
     if (authProvider.error == null) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Registration successful!'),
-          backgroundColor: AppTheme.successGreen,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      if (!mounted) return;
+      handleLoginSuccess(authProvider.activeRole ?? widget.role.name);
     }
+  }
+
+  void handleLoginSuccess(String role) {
+    final routeName = switch (role) {
+      'seller' => '/seller-dashboard',
+      'rider' => '/rider-dashboard',
+      _ => '/user-dashboard',
+    };
+
+    Navigator.of(context).pushReplacementNamed(routeName);
   }
 
   void _showForgotPasswordDialog() {

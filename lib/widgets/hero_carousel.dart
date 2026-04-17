@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:carousel_slider/carousel_controller.dart'
-    show CarouselSliderController;
 
 import '../core/theme/app_theme.dart';
 import '../core/constants/app_constants.dart';
@@ -10,7 +8,7 @@ import '../core/config/app_config.dart';
 class HeroCarousel extends StatefulWidget {
   final VoidCallback? onShopNow;
 
-  const HeroCarousel({Key? key, this.onShopNow}) : super(key: key);
+  const HeroCarousel({super.key, this.onShopNow});
 
   @override
   State<HeroCarousel> createState() => _HeroCarouselState();
@@ -37,7 +35,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
     final isMobile = screenWidth < 768;
     final carouselHeight = _carouselHeight(screenHeight, isMobile);
 
-    return Container(
+    return SizedBox(
       height: carouselHeight,
       width: double.infinity,
       child: ClipRect(

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
 
 import '../core/config/app_config.dart';
 import '../models/product.dart';
@@ -26,7 +25,11 @@ class ApiService {
     return headers;
   }
 
-  Future<void> _logRequest(String method, Uri uri, {Map<String, dynamic>? body}) async {
+  Future<void> _logRequest(
+    String method,
+    Uri uri, {
+    Map<String, dynamic>? body,
+  }) async {
     if (AppConfig.enableNetworkLogging) {
       developer.log('API Request: $method ${uri.toString()}');
       if (body != null) {
@@ -35,16 +38,24 @@ class ApiService {
     }
   }
 
-  Future<void> _logResponse(String method, Uri uri, http.Response response) async {
+  Future<void> _logResponse(
+    String method,
+    Uri uri,
+    http.Response response,
+  ) async {
     if (AppConfig.enableNetworkLogging) {
-      developer.log('API Response: $method ${uri.toString()} - Status: ${response.statusCode}');
+      developer.log(
+        'API Response: $method ${uri.toString()} - Status: ${response.statusCode}',
+      );
       developer.log('Response Body: ${response.body}');
     }
   }
 
   Future<Map<String, dynamic>> _handleResponse(http.Response response) async {
-    final body = response.body.isEmpty ? <String, dynamic>{} : jsonDecode(response.body) as Map<String, dynamic>;
-    
+    final body = response.body.isEmpty
+        ? <String, dynamic>{}
+        : jsonDecode(response.body) as Map<String, dynamic>;
+
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return body;
     } else {
@@ -71,24 +82,27 @@ class ApiService {
       'page': page.toString(),
       'limit': limit.toString(),
     };
-    
+
     if (category != null) queryParams['category'] = category;
     if (search != null) queryParams['search'] = search;
     if (sortBy != null) queryParams['sort_by'] = sortBy;
     if (sortOrder != null) queryParams['sort_order'] = sortOrder;
 
-    final uri = Uri.parse('${AppConfig.apiBaseUrl}/products').replace(queryParameters: queryParams);
+    final uri = Uri.parse(
+      '${AppConfig.apiBaseUrl}/products',
+    ).replace(queryParameters: queryParams);
     await _logRequest('GET', uri);
 
     try {
       final response = await http
           .get(uri, headers: await _getHeaders())
           .timeout(AppConfig.requestTimeout);
-      
+
       await _logResponse('GET', uri, response);
       final data = await _handleResponse(response);
-      
-      final productsData = data['data']?['products'] ?? data['products'] ?? data['data'] ?? [];
+
+      final productsData =
+          data['data']?['products'] ?? data['products'] ?? data['data'] ?? [];
       return (productsData as List)
           .map((item) => Product.fromJson(item as Map<String, dynamic>))
           .toList();
@@ -105,10 +119,10 @@ class ApiService {
       final response = await http
           .get(uri, headers: await _getHeaders())
           .timeout(AppConfig.requestTimeout);
-      
+
       await _logResponse('GET', uri, response);
       final data = await _handleResponse(response);
-      
+
       final productData = data['data'] ?? data['product'] ?? data;
       return Product.fromJson(productData as Map<String, dynamic>);
     } catch (e) {
@@ -120,23 +134,23 @@ class ApiService {
     int page = 1,
     int limit = 12,
   }) async {
-    final queryParams = {
-      'page': page.toString(),
-      'limit': limit.toString(),
-    };
+    final queryParams = {'page': page.toString(), 'limit': limit.toString()};
 
-    final uri = Uri.parse('${AppConfig.apiBaseUrl}/products/featured').replace(queryParameters: queryParams);
+    final uri = Uri.parse(
+      '${AppConfig.apiBaseUrl}/products/featured',
+    ).replace(queryParameters: queryParams);
     await _logRequest('GET', uri);
 
     try {
       final response = await http
           .get(uri, headers: await _getHeaders())
           .timeout(AppConfig.requestTimeout);
-      
+
       await _logResponse('GET', uri, response);
       final data = await _handleResponse(response);
-      
-      final productsData = data['data']?['products'] ?? data['products'] ?? data['data'] ?? [];
+
+      final productsData =
+          data['data']?['products'] ?? data['products'] ?? data['data'] ?? [];
       return (productsData as List)
           .map((item) => Product.fromJson(item as Map<String, dynamic>))
           .toList();
@@ -170,11 +184,12 @@ class ApiService {
       final response = await http
           .get(uri, headers: await _getHeaders(authToken: authToken))
           .timeout(AppConfig.requestTimeout);
-      
+
       await _logResponse('GET', uri, response);
       final data = await _handleResponse(response);
-      
-      final cartData = data['data']?['items'] ?? data['items'] ?? data['cart_items'] ?? [];
+
+      final cartData =
+          data['data']?['items'] ?? data['items'] ?? data['cart_items'] ?? [];
       return (cartData as List)
           .map((item) => CartItem.fromJson(item as Map<String, dynamic>))
           .toList();
@@ -191,13 +206,17 @@ class ApiService {
     required String authToken,
   }) async {
     final uri = Uri.parse('${AppConfig.apiBaseUrl}/cart');
-    final body = {
+    final body = <String, dynamic>{
       'product_id': productId,
       'quantity': quantity,
-      if (size != null) 'size': size,
-      if (color != null) 'color': color,
     };
-    
+    if (size != null) {
+      body['size'] = size;
+    }
+    if (color != null) {
+      body['color'] = color;
+    }
+
     await _logRequest('POST', uri, body: body);
 
     try {
@@ -208,10 +227,10 @@ class ApiService {
             body: jsonEncode(body),
           )
           .timeout(AppConfig.requestTimeout);
-      
+
       await _logResponse('POST', uri, response);
       final data = await _handleResponse(response);
-      
+
       final cartItemData = data['data'] ?? data['cart_item'] ?? data;
       return CartItem.fromJson(cartItemData as Map<String, dynamic>);
     } catch (e) {
@@ -226,7 +245,7 @@ class ApiService {
   }) async {
     final uri = Uri.parse('${AppConfig.apiBaseUrl}/cart/$cartItemId');
     final body = {'quantity': quantity};
-    
+
     await _logRequest('PUT', uri, body: body);
 
     try {
@@ -237,10 +256,10 @@ class ApiService {
             body: jsonEncode(body),
           )
           .timeout(AppConfig.requestTimeout);
-      
+
       await _logResponse('PUT', uri, response);
       final data = await _handleResponse(response);
-      
+
       final cartItemData = data['data'] ?? data['cart_item'] ?? data;
       return CartItem.fromJson(cartItemData as Map<String, dynamic>);
     } catch (e) {
@@ -259,7 +278,7 @@ class ApiService {
       final response = await http
           .delete(uri, headers: await _getHeaders(authToken: authToken))
           .timeout(AppConfig.requestTimeout);
-      
+
       await _logResponse('DELETE', uri, response);
       await _handleResponse(response);
     } catch (e) {
@@ -275,7 +294,7 @@ class ApiService {
       final response = await http
           .delete(uri, headers: await _getHeaders(authToken: authToken))
           .timeout(AppConfig.requestTimeout);
-      
+
       await _logResponse('DELETE', uri, response);
       await _handleResponse(response);
     } catch (e) {
@@ -289,22 +308,15 @@ class ApiService {
     required String idToken,
   }) async {
     final uri = Uri.parse('${AppConfig.apiBaseUrl}/auth/exchange');
-    final body = {
-      'email': email,
-      'id_token': idToken,
-    };
-    
+    final body = {'email': email, 'id_token': idToken};
+
     await _logRequest('POST', uri, body: body);
 
     try {
       final response = await http
-          .post(
-            uri,
-            headers: await _getHeaders(),
-            body: jsonEncode(body),
-          )
+          .post(uri, headers: await _getHeaders(), body: jsonEncode(body))
           .timeout(AppConfig.requestTimeout);
-      
+
       await _logResponse('POST', uri, response);
       return await _handleResponse(response);
     } catch (e) {
@@ -315,18 +327,14 @@ class ApiService {
   Future<Map<String, dynamic>> getUserRoles(String email) async {
     final uri = Uri.parse('${AppConfig.apiBaseUrl}/roles');
     final body = {'email': email};
-    
+
     await _logRequest('POST', uri, body: body);
 
     try {
       final response = await http
-          .post(
-            uri,
-            headers: await _getHeaders(),
-            body: jsonEncode(body),
-          )
+          .post(uri, headers: await _getHeaders(), body: jsonEncode(body))
           .timeout(AppConfig.requestTimeout);
-      
+
       await _logResponse('POST', uri, response);
       return await _handleResponse(response);
     } catch (e) {
@@ -343,10 +351,10 @@ class ApiService {
       final response = await http
           .get(uri, headers: await _getHeaders())
           .timeout(AppConfig.requestTimeout);
-      
+
       await _logResponse('GET', uri, response);
       final data = await _handleResponse(response);
-      
+
       final categoriesData = data['data'] ?? data['categories'] ?? [];
       return (categoriesData as List)
           .map((item) => item as Map<String, dynamic>)
@@ -372,11 +380,7 @@ class ApiException implements Exception {
   final int? statusCode;
   final String? error;
 
-  ApiException({
-    required this.message,
-    this.statusCode,
-    this.error,
-  });
+  ApiException({required this.message, this.statusCode, this.error});
 
   @override
   String toString() {

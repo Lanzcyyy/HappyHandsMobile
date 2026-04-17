@@ -1,14 +1,11 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 
-import '../core/network/api_exceptions.dart';
 import '../models/role.dart';
-import '../services/flask_api_service.dart';
 
 class RoleProvider extends ChangeNotifier {
-  final FlaskApiService _api;
-
-  RoleProvider(this._api);
+  RoleProvider();
 
   bool _isLoading = false;
   String? _error;
@@ -21,10 +18,11 @@ class RoleProvider extends ChangeNotifier {
   AppRole get selectedRole => _selected;
 
   Future<void> refresh() async {
-    final email = FirebaseAuth.instance.currentUser?.email;
-    if (email == null || email.isEmpty) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
       _available = const [AppRole.user];
       _selected = AppRole.user;
+      _error = null;
       notifyListeners();
       return;
     }
@@ -34,15 +32,24 @@ class RoleProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await _api.fetchRoles(email);
-      _available = result.isEmpty ? const [AppRole.user] : result;
-      if (!_available.contains(_selected)) {
-        _selected = _available.first;
+      final snapshot = await FirebaseDatabase.instance
+          .ref('users/${user.uid}')
+          .get();
+      final value = snapshot.value;
+      final data = value is Map ? value : null;
+      final storedRole = data?['role']?.toString().trim().toLowerCase();
+      final role = storedRole == null ? null : AppRoleX.fromKey(storedRole);
+
+      _available = role == null ? const [AppRole.user] : [role];
+      _selected = _available.first;
+
+      if (role == null) {
+        _error = 'Account setup incomplete';
       }
-    } on ApiException catch (e) {
-      _error = e.message;
     } catch (e) {
       _error = e.toString();
+      _available = const [AppRole.user];
+      _selected = AppRole.user;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -54,4 +61,3 @@ class RoleProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
-

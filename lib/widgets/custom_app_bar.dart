@@ -18,8 +18,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBackTap;
   final List<Widget>? actions;
 
+  static const String _logoutMenuValue = 'logout';
+
   const CustomAppBar({
-    Key? key,
+    super.key,
     required this.title,
     this.showSearch = false,
     this.showBackButton = false,
@@ -29,7 +31,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onProfileTap,
     this.onBackTap,
     this.actions,
-  }) : super(key: key);
+  });
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight + 16);
@@ -195,39 +197,66 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     // Profile Button
                     Consumer<AuthProvider>(
                       builder: (context, authProvider, child) {
-                        return GestureDetector(
-                          onTap: onProfileTap,
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: AppTheme.lightGray,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppTheme.borderGray,
-                                width: 1,
+                        final isSignedIn = authProvider.user != null;
+
+                        final avatar = Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: AppTheme.lightGray,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppTheme.borderGray,
+                              width: 1,
+                            ),
+                          ),
+                          child: authProvider.user?.photoURL != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.network(
+                                    authProvider.user!.photoURL!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return _buildAvatarIcon();
+                                    },
+                                  ),
+                                )
+                              : _buildAvatarIcon(),
+                        );
+
+                        if (!isSignedIn) {
+                          return GestureDetector(
+                            onTap: onProfileTap,
+                            child: avatar,
+                          );
+                        }
+
+                        return PopupMenuButton<String>(
+                          tooltip: 'Account options',
+                          onSelected: (value) async {
+                            if (value == _logoutMenuValue) {
+                              await authProvider.logout();
+                              if (!context.mounted) return;
+                              Navigator.pushNamedAndRemoveUntil(
+                                context,
+                                '/home',
+                                (route) => false,
+                              );
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem<String>(
+                              value: _logoutMenuValue,
+                              child: Row(
+                                children: [
+                                  Icon(Icons.logout, size: 18),
+                                  SizedBox(width: 10),
+                                  Text('Logout'),
+                                ],
                               ),
                             ),
-                            child: authProvider.user?.photoURL != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Image.network(
-                                      authProvider.user!.photoURL!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                            return _buildAvatarPlaceholder(
-                                              context,
-                                              authProvider,
-                                            );
-                                          },
-                                    ),
-                                  )
-                                : _buildAvatarPlaceholder(
-                                    context,
-                                    authProvider,
-                                  ),
-                          ),
+                          ],
+                          child: avatar,
                         );
                       },
                     ),
@@ -247,24 +276,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _buildAvatarPlaceholder(
-    BuildContext context,
-    AuthProvider authProvider,
-  ) {
-    final initial = authProvider.user?.displayName?.isNotEmpty == true
-        ? authProvider.user!.displayName![0].toUpperCase()
-        : authProvider.user?.email?.isNotEmpty == true
-        ? authProvider.user!.email![0].toUpperCase()
-        : 'U';
-
-    return Center(
-      child: Text(
-        initial,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: AppTheme.darkBlue,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+  Widget _buildAvatarIcon() {
+    return const Center(
+      child: Icon(Icons.person_outline, color: AppTheme.darkBlue, size: 18),
     );
   }
 }

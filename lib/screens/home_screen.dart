@@ -13,11 +13,14 @@ import '../core/theme/app_theme.dart';
 import '../core/constants/app_constants.dart';
 import '../models/product.dart';
 import '../screens/product_detail_screen.dart';
+import '../screens/home/categories_screen.dart';
 import '../screens/cart_screen.dart';
 import '../screens/auth_screen.dart';
+import '../screens/auth/seller_auth_screen.dart';
+import '../screens/auth/rider_auth_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -46,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProductProvider>().loadFeaturedProducts(refresh: true);
       context.read<ProductProvider>().loadProducts(refresh: true);
-      
+
       // Load cart if user is logged in
       final authProvider = context.read<AuthProvider>();
       if (authProvider.user != null) {
@@ -57,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _setupScrollListener() {
     _scrollController.addListener(() {
-      if (_scrollController.position.pixels >= 
+      if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent - 200) {
         final productProvider = context.read<ProductProvider>();
         if (productProvider.hasMorePages && !productProvider.isLoading) {
@@ -108,22 +111,20 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Hero Carousel
-          HeroCarousel(
-            onShopNow: _scrollToProducts,
-          ),
-          
+          HeroCarousel(onShopNow: _scrollToProducts),
+
           // Featured Products Section
           _buildFeaturedSection(),
-          
+
           // Categories Section
           _buildCategoriesSection(),
-          
+
           // All Products Section
           _buildAllProductsSection(),
-          
+
           // Features Section
           _buildFeaturesSection(),
-          
+
           // Bottom padding
           const SizedBox(height: AppConstants.spacingXXL),
         ],
@@ -198,7 +199,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: AppTheme.lightGray,
-                        borderRadius: BorderRadius.circular(AppConstants.radiusSM),
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.radiusSM,
+                        ),
                       ),
                       child: Text(
                         '${productProvider.featuredProducts.length} products',
@@ -210,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: AppConstants.spacingMD),
-              
+
               // Featured Products Grid
               if (productProvider.isLoadingFeatured)
                 const LoadingWidget(height: 200)
@@ -241,12 +244,12 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: AppConstants.spacingSM),
           Text(
             'Our collections',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppTheme.mediumGray,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
           ),
           const SizedBox(height: AppConstants.spacingLG),
-          
+
           // Categories Grid
           GridView.builder(
             shrinkWrap: true,
@@ -275,9 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: AppTheme.lightGray,
           borderRadius: BorderRadius.circular(AppConstants.radiusMD),
-          border: Border.all(
-            color: AppTheme.borderGray.withOpacity(0.3),
-          ),
+          border: Border.all(color: AppTheme.borderGray.withOpacity(0.3)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -319,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: AppConstants.spacingMD),
-              
+
               // Products Grid
               if (productProvider.isLoading && productProvider.products.isEmpty)
                 const LoadingWidget(height: 300)
@@ -329,15 +330,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 Column(
                   children: [
                     _buildProductGrid(productProvider.products),
-                    
+
                     // Load More Button
                     if (productProvider.hasMorePages)
                       Padding(
-                        padding: const EdgeInsets.only(top: AppConstants.spacingLG),
+                        padding: const EdgeInsets.only(
+                          top: AppConstants.spacingLG,
+                        ),
                         child: productProvider.isLoading
                             ? const LoadingWidget(height: 50)
                             : ElevatedButton(
-                                onPressed: () => productProvider.loadMoreProducts(),
+                                onPressed: () =>
+                                    productProvider.loadMoreProducts(),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.primaryBlue,
                                   foregroundColor: AppTheme.white,
@@ -400,78 +404,160 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               borderRadius: BorderRadius.circular(AppConstants.radiusMD),
             ),
-            child: Column(
-              children: [
-                Row(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 640;
+
+                final bannerCopy = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Bring Home Joyful Moments',
-                            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              color: AppTheme.darkBlue,
-                              fontWeight: FontWeight.w700,
-                            ),
+                    Text(
+                      'Bring Home Joyful Moments',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            fontSize: isNarrow ? 24 : null,
+                            color: AppTheme.darkBlue,
+                            fontWeight: FontWeight.w700,
                           ),
-                          const SizedBox(height: AppConstants.spacingSM),
-                          Text(
-                            'Curated baby essentials parents rave about—find a new favorite today.',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: AppTheme.mediumGray,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
-                    const SizedBox(width: AppConstants.spacingXL),
-                    Container(
-                      padding: const EdgeInsets.all(AppConstants.spacingMD),
-                      decoration: BoxDecoration(
-                        color: AppTheme.successGreen.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(AppConstants.radiusMD),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            FontAwesomeIcons.leaf,
-                            color: AppTheme.successGreen,
-                            size: 24,
-                          ),
-                          const SizedBox(height: AppConstants.spacingXS),
-                          Text(
-                            'Eco-Friendly',
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: AppTheme.successGreen,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            'Safe materials for your little ones',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppTheme.mediumGray,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
+                    const SizedBox(height: AppConstants.spacingSM),
+                    Text(
+                      'Curated baby essentials parents rave about—find a new favorite today.',
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontSize: isNarrow ? 15 : null,
+                        color: AppTheme.mediumGray,
                       ),
                     ),
                   ],
-                ),
-              ],
+                );
+
+                final ecoCard = Container(
+                  width: isNarrow ? double.infinity : 170,
+                  padding: const EdgeInsets.all(AppConstants.spacingMD),
+                  decoration: BoxDecoration(
+                    color: AppTheme.successGreen.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppConstants.radiusMD),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        FontAwesomeIcons.leaf,
+                        color: AppTheme.successGreen,
+                        size: 24,
+                      ),
+                      const SizedBox(height: AppConstants.spacingXS),
+                      Text(
+                        'Eco-Friendly',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontSize: isNarrow ? 13 : null,
+                          color: AppTheme.successGreen,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        'Safe materials for your little ones',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          fontSize: isNarrow ? 11 : null,
+                          color: AppTheme.mediumGray,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+
+                if (isNarrow) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      bannerCopy,
+                      const SizedBox(height: AppConstants.spacingMD),
+                      ecoCard,
+                    ],
+                  );
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: bannerCopy),
+                    const SizedBox(width: AppConstants.spacingXL),
+                    ecoCard,
+                  ],
+                );
+              },
             ),
           ),
-          
+
+          const SizedBox(height: AppConstants.spacingLG),
+
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 600;
+
+              final sellerCard = _buildPartnerActionCard(
+                context,
+                icon: Icons.storefront_outlined,
+                title: 'Become a Seller',
+                subtitle: 'List products and reach more customers.',
+                buttonText: 'Start Selling',
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => SellerAuthScreen()),
+                ),
+              );
+
+              final riderCard = _buildPartnerActionCard(
+                context,
+                icon: Icons.delivery_dining_outlined,
+                title: 'Become a Rider',
+                subtitle: 'Deliver orders and earn flexible income.',
+                buttonText: 'Start Delivering',
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => RiderAuthScreen()),
+                ),
+              );
+
+              if (isWide) {
+                return Row(
+                  children: [
+                    Expanded(child: sellerCard),
+                    const SizedBox(width: AppConstants.spacingMD),
+                    Expanded(child: riderCard),
+                  ],
+                );
+              }
+
+              return Column(
+                children: [
+                  sellerCard,
+                  const SizedBox(height: AppConstants.spacingMD),
+                  riderCard,
+                ],
+              );
+            },
+          ),
+
           const SizedBox(height: AppConstants.spacingXL),
-          
+
           // Features Grid
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 1.5,
+              childAspectRatio: 1.1,
               crossAxisSpacing: AppConstants.spacingMD,
               mainAxisSpacing: AppConstants.spacingMD,
             ),
@@ -492,21 +578,20 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: AppTheme.lightGray,
         borderRadius: BorderRadius.circular(AppConstants.radiusMD),
-        border: Border.all(
-          color: AppTheme.borderGray.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppTheme.borderGray.withOpacity(0.3)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            feature['icon'] ?? '📦',
-            style: const TextStyle(fontSize: 24),
-          ),
+          Text(feature['icon'] ?? '📦', style: const TextStyle(fontSize: 22)),
           const SizedBox(height: AppConstants.spacingSM),
           Text(
             feature['title'] ?? 'Feature',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: AppTheme.darkBlue,
             ),
@@ -516,11 +601,95 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             feature['subtitle'] ?? 'Description',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              fontSize: 11,
               color: AppTheme.mediumGray,
             ),
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPartnerActionCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String buttonText,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(AppConstants.spacingLG),
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(AppConstants.radiusLG),
+        border: Border.all(color: AppTheme.borderGray.withOpacity(0.7)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.darkBlue.withOpacity(0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryBlue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppConstants.radiusMD),
+            ),
+            child: Icon(icon, color: AppTheme.primaryBlue),
+          ),
+          const SizedBox(height: AppConstants.spacingMD),
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: AppTheme.darkBlue,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: AppConstants.spacingXS),
+          Text(
+            subtitle,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppTheme.mediumGray,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: AppConstants.spacingMD),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryBlue,
+                foregroundColor: AppTheme.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppConstants.radiusLG),
+                ),
+              ),
+              child: Text(
+                buttonText,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -534,24 +703,20 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              FontAwesomeIcons.search,
-              size: 64,
-              color: AppTheme.mediumGray,
-            ),
+            Icon(FontAwesomeIcons.search, size: 64, color: AppTheme.mediumGray),
             const SizedBox(height: AppConstants.spacingMD),
             Text(
               'No products found',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: AppTheme.mediumGray,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(color: AppTheme.mediumGray),
             ),
             const SizedBox(height: AppConstants.spacingSM),
             Text(
               'Try searching with different keywords',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.mediumGray,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
             ),
           ],
         ),
@@ -565,13 +730,9 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: AppTheme.lightGray,
         borderRadius: BorderRadius.circular(AppConstants.radiusMD),
-        border: Border.all(
-          color: AppTheme.borderGray.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppTheme.borderGray.withOpacity(0.3)),
       ),
-      child: const Center(
-        child: Text('No featured products available yet.'),
-      ),
+      child: const Center(child: Text('No featured products available yet.')),
     );
   }
 
@@ -581,13 +742,9 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: AppTheme.lightGray,
         borderRadius: BorderRadius.circular(AppConstants.radiusMD),
-        border: Border.all(
-          color: AppTheme.borderGray.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppTheme.borderGray.withOpacity(0.3)),
       ),
-      child: const Center(
-        child: Text('No products available yet.'),
-      ),
+      child: const Center(child: Text('No products available yet.')),
     );
   }
 
@@ -606,16 +763,16 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: AppConstants.spacingMD),
             Text(
               'Something went wrong',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: AppTheme.errorRed,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineMedium?.copyWith(color: AppTheme.errorRed),
             ),
             const SizedBox(height: AppConstants.spacingSM),
             Text(
               error,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.mediumGray,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppTheme.mediumGray),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppConstants.spacingLG),
@@ -674,7 +831,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _navigateToCategory(String categoryId) {
-    // Navigate to category screen (to be implemented)
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CategoriesScreen(initialSlug: categoryId),
+      ),
+    );
   }
 
   void _addToCart(Product product) async {

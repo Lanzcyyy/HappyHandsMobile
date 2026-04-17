@@ -1,20 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+import '../../providers/auth_provider.dart';
 import '../../providers/products_provider.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_widget.dart';
 import '../../widgets/product_card.dart';
-import '../../widgets/role_card.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/constants/app_constants.dart';
 import 'categories_screen.dart';
+import '../auth/rider_auth_screen.dart';
+import '../auth/seller_auth_screen.dart';
 import '../product/product_detail_screen.dart';
 import '../role_selection_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ProductsProvider>().fetch();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -117,6 +131,21 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Logout',
+            icon: const Icon(Icons.logout, color: AppTheme.darkBlue),
+            onPressed: () async {
+              await context.read<AuthProvider>().logout();
+              if (!mounted) return;
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+            },
+          ),
+        ],
       ),
       body: Builder(
         builder: (_) {
@@ -149,35 +178,35 @@ class HomeScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Join Our Platform',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleLarge
-                                        ?.copyWith(
-                                          color: AppTheme.darkBlue,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Become a partner today',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(color: AppTheme.mediumGray),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            ElevatedButton(
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isNarrow = constraints.maxWidth < 380;
+
+                            final copy = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Join Our Platform',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(
+                                        color: AppTheme.darkBlue,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Become a partner today',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(color: AppTheme.mediumGray),
+                                ),
+                              ],
+                            );
+
+                            final actionButton = ElevatedButton(
                               onPressed: () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -200,8 +229,27 @@ class HomeScreen extends StatelessWidget {
                                 ),
                               ),
                               child: const Text('Join Now'),
-                            ),
-                          ],
+                            );
+
+                            if (isNarrow) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  copy,
+                                  const SizedBox(height: 12),
+                                  actionButton,
+                                ],
+                              );
+                            }
+
+                            return Row(
+                              children: [
+                                Expanded(child: copy),
+                                const SizedBox(width: 12),
+                                actionButton,
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -266,7 +314,7 @@ class HomeScreen extends StatelessWidget {
                             crossAxisCount: 2,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
-                            childAspectRatio: 0.72,
+                            childAspectRatio: 0.8,
                           ),
                       itemCount: items.length,
                       itemBuilder: (context, index) {
@@ -286,12 +334,243 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
 
+                // Footer Section
+                SliverToBoxAdapter(child: widget._buildFooterSection(context)),
+
                 // Bottom padding
                 const SliverToBoxAdapter(child: SizedBox(height: 24)),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+extension on HomeScreen {
+  Widget _buildFooterSection(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppTheme.darkBlue, AppTheme.primaryBlue],
+        ),
+        borderRadius: BorderRadius.circular(AppConstants.radiusXL),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 440;
+
+              final copy = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Grow with Happy Hands',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppTheme.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Join our seller and rider network. Start selling products or delivering orders with a clean, simple onboarding flow.',
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.white.withValues(alpha: 0.82),
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              );
+
+              final iconBlock = Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppTheme.white.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(AppConstants.radiusMD),
+                ),
+                child: const Icon(
+                  Icons.storefront_outlined,
+                  color: AppTheme.white,
+                ),
+              );
+
+              if (isNarrow) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [copy, const SizedBox(height: 12), iconBlock],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: copy),
+                  const SizedBox(width: 12),
+                  iconBlock,
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 620;
+              final sellerCard = Expanded(
+                child: _buildFooterActionCard(
+                  context,
+                  icon: Icons.storefront_outlined,
+                  title: 'Become a Seller',
+                  description: 'List baby essentials and reach more customers.',
+                  buttonText: 'Start Selling',
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SellerAuthScreen()),
+                  ),
+                ),
+              );
+              final riderCard = Expanded(
+                child: _buildFooterActionCard(
+                  context,
+                  icon: Icons.delivery_dining_outlined,
+                  title: 'Become a Rider',
+                  description: 'Deliver orders and earn flexible income.',
+                  buttonText: 'Start Delivering',
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const RiderAuthScreen()),
+                  ),
+                ),
+              );
+
+              if (isWide) {
+                return Row(
+                  children: [sellerCard, const SizedBox(width: 12), riderCard],
+                );
+              }
+
+              return Column(
+                children: [
+                  _buildFooterActionCard(
+                    context,
+                    icon: Icons.storefront_outlined,
+                    title: 'Become a Seller',
+                    description:
+                        'List baby essentials and reach more customers.',
+                    buttonText: 'Start Selling',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SellerAuthScreen(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildFooterActionCard(
+                    context,
+                    icon: Icons.delivery_dining_outlined,
+                    title: 'Become a Rider',
+                    description: 'Deliver orders and earn flexible income.',
+                    buttonText: 'Start Delivering',
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const RiderAuthScreen(),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooterActionCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String description,
+    required String buttonText,
+    required VoidCallback onPressed,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppConstants.radiusLG),
+        border: Border.all(color: AppTheme.white.withValues(alpha: 0.16)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppTheme.white.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(AppConstants.radiusMD),
+            ),
+            child: Icon(icon, color: AppTheme.white),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: AppTheme.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            description,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppTheme.white.withValues(alpha: 0.82),
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.white,
+                foregroundColor: AppTheme.darkBlue,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppConstants.radiusLG),
+                ),
+              ),
+              child: Text(
+                buttonText,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

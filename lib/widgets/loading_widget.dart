@@ -11,12 +11,12 @@ class LoadingWidget extends StatelessWidget {
   final String? label;
 
   const LoadingWidget({
-    Key? key,
+    super.key,
     this.height,
     this.width,
     this.useShimmer = true,
     this.label,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -72,9 +72,9 @@ class ProductGridLoading extends StatelessWidget {
   final int itemCount;
 
   const ProductGridLoading({
-    Key? key,
+    super.key,
     this.itemCount = 6,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +99,7 @@ class ProductGridLoading extends StatelessWidget {
 }
 
 class CartItemLoading extends StatelessWidget {
-  const CartItemLoading({Key? key}) : super(key: key);
+  const CartItemLoading({super.key});
 
   @override
   Widget build(BuildContext context) {

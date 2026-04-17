@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../providers/auth_provider.dart';
 import '../../core/utils/money.dart';
 import '../../providers/seller_provider.dart';
 import '../../widgets/error_view.dart';
@@ -55,7 +56,20 @@ class _SellerDashboardScreen extends StatelessWidget {
           IconButton(
             onPressed: seller.isLoading ? null : () => context.read<SellerProvider>().loadDashboard(),
             icon: const Icon(Icons.refresh),
-          )
+          ),
+          IconButton(
+            tooltip: 'Logout',
+            onPressed: () async {
+              await context.read<AuthProvider>().logout();
+              if (!context.mounted) return;
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              );
+            },
+            icon: const Icon(Icons.logout),
+          ),
         ],
       ),
       body: Builder(
@@ -111,7 +125,24 @@ class _SellerOrdersScreen extends StatelessWidget {
   const _SellerOrdersScreen();
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Seller Orders')),
+        appBar: AppBar(
+          title: const Text('Seller Orders'),
+          actions: [
+            IconButton(
+              tooltip: 'Logout',
+              onPressed: () async {
+                await context.read<AuthProvider>().logout();
+                if (!context.mounted) return;
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/home',
+                  (route) => false,
+                );
+              },
+              icon: const Icon(Icons.logout),
+            ),
+          ],
+        ),
         body: const Center(child: Text('Next: seller orders + status updates')),
       );
 }
@@ -120,7 +151,24 @@ class _SellerProductsScreen extends StatelessWidget {
   const _SellerProductsScreen();
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Seller Products')),
+        appBar: AppBar(
+          title: const Text('Seller Products'),
+          actions: [
+            IconButton(
+              tooltip: 'Logout',
+              onPressed: () async {
+                await context.read<AuthProvider>().logout();
+                if (!context.mounted) return;
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/home',
+                  (route) => false,
+                );
+              },
+              icon: const Icon(Icons.logout),
+            ),
+          ],
+        ),
         body: const Center(child: Text('Next: product management')),
       );
 }
@@ -129,7 +177,24 @@ class _SellerChatScreen extends StatelessWidget {
   const _SellerChatScreen();
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Seller Chat')),
+        appBar: AppBar(
+          title: const Text('Seller Chat'),
+          actions: [
+            IconButton(
+              tooltip: 'Logout',
+              onPressed: () async {
+                await context.read<AuthProvider>().logout();
+                if (!context.mounted) return;
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/home',
+                  (route) => false,
+                );
+              },
+              icon: const Icon(Icons.logout),
+            ),
+          ],
+        ),
         body: const Center(child: Text('Next: seller chat conversations')),
       );
 }
@@ -138,7 +203,24 @@ class _SellerProfileScreen extends StatelessWidget {
   const _SellerProfileScreen();
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Seller Profile')),
+        appBar: AppBar(
+          title: const Text('Seller Profile'),
+          actions: [
+            IconButton(
+              tooltip: 'Logout',
+              onPressed: () async {
+                await context.read<AuthProvider>().logout();
+                if (!context.mounted) return;
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/home',
+                  (route) => false,
+                );
+              },
+              icon: const Icon(Icons.logout),
+            ),
+          ],
+        ),
         body: const Center(child: Text('Next: seller profile/settings')),
       );
 }

@@ -11,14 +11,14 @@ class RoleCard extends StatelessWidget {
   final String buttonText;
 
   const RoleCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.description,
     required this.icon,
     required this.iconBackgroundColor,
     required this.onTap,
     this.buttonText = 'Get Started',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

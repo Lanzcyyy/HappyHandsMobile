@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../cart/cart_screen.dart';
 import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 
 class MainShell extends StatefulWidget {
@@ -22,17 +23,13 @@ class _MainShellState extends State<MainShell> {
     // Cart loads on first view to keep Home fast.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final cart = context.read<CartProvider>();
-      cart.fetch();
+      cart.loadCart(context.read<AuthProvider>().backendAccessToken);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final pages = const [
-      HomeScreen(),
-      CartScreen(),
-      ProfileScreen(),
-    ];
+    final pages = const [HomeScreen(), CartScreen(), ProfileScreen()];
 
     return Scaffold(
       body: pages[_index],
@@ -40,12 +37,23 @@ class _MainShellState extends State<MainShell> {
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.shopping_cart_outlined), selectedIcon: Icon(Icons.shopping_cart), label: 'Cart'),
-          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.shopping_cart_outlined),
+            selectedIcon: Icon(Icons.shopping_cart),
+            label: 'Cart',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
         ],
       ),
     );
   }
 }
-

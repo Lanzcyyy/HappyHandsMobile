@@ -19,8 +19,7 @@ import 'cart_screen.dart';
 class ProductDetailScreen extends StatefulWidget {
   final int productId;
 
-  const ProductDetailScreen({Key? key, required this.productId})
-    : super(key: key);
+  const ProductDetailScreen({super.key, required this.productId});
 
   @override
   State<ProductDetailScreen> createState() => _ProductDetailScreenState();
@@ -141,7 +140,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildProductImages(Product product) {
-    return Container(
+    return SizedBox(
       height: 400,
       child: Stack(
         children: [
@@ -370,7 +369,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 Icon(FontAwesomeIcons.star, size: 16, color: Colors.amber),
                 const SizedBox(width: AppConstants.spacingXS),
                 Text(
-                  '${product.rating!.toStringAsFixed(1)}',
+                  product.rating!.toStringAsFixed(1),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppTheme.darkBlue,
                     fontWeight: FontWeight.w600,

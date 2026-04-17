@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/utils/money.dart';
 import '../../models/product.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../services/flask_api_service.dart';
 import '../../widgets/error_view.dart';
@@ -63,9 +64,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       body: Builder(
         builder: (_) {
           if (_loading) return const LoadingWidget(label: 'Loading product...');
-          if (_error != null) return ErrorView(message: _error!, onRetry: _load);
+          if (_error != null) {
+            return ErrorView(message: _error!, onRetry: _load);
+          }
           final product = _product;
-          if (product == null) return const ErrorView(message: 'Product not found');
+          if (product == null) {
+            return const ErrorView(message: 'Product not found');
+          }
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -77,14 +82,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   child: Container(
                     color: const Color(0xFFF2F2F6),
                     child: product.imageUrl == null || product.imageUrl!.isEmpty
-                        ? const Icon(Icons.image_not_supported_outlined, size: 48)
+                        ? const Icon(
+                            Icons.image_not_supported_outlined,
+                            size: 48,
+                          )
                         : CachedNetworkImage(
                             imageUrl: product.imageUrl!,
                             fit: BoxFit.cover,
-                            errorWidget: (context, url, error) =>
-                                const Icon(Icons.broken_image_outlined, size: 48),
-                            placeholder: (context, url) =>
-                                const Center(child: CircularProgressIndicator()),
+                            errorWidget: (context, url, error) => const Icon(
+                              Icons.broken_image_outlined,
+                              size: 48,
+                            ),
+                            placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
                           ),
                   ),
                 ),
@@ -92,26 +103,37 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               const SizedBox(height: 14),
               Text(
                 product.name,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
               Text(
                 formatMoney(product.price),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                  fontWeight: FontWeight.w900,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
               const SizedBox(height: 12),
-              Text(product.description.isEmpty ? 'No description provided.' : product.description),
+              Text(
+                product.description.isEmpty
+                    ? 'No description provided.'
+                    : product.description,
+              ),
               const SizedBox(height: 18),
               Row(
                 children: [
                   IconButton(
-                    onPressed: _qty <= 1 ? null : () => setState(() => _qty -= 1),
+                    onPressed: _qty <= 1
+                        ? null
+                        : () => setState(() => _qty -= 1),
                     icon: const Icon(Icons.remove_circle_outline),
                   ),
-                  Text('Qty: $_qty', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text(
+                    'Qty: $_qty',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   IconButton(
                     onPressed: () => setState(() => _qty += 1),
                     icon: const Icon(Icons.add_circle_outline),
@@ -122,17 +144,34 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               if (cart.error != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: Text(cart.error!, style: const TextStyle(color: Colors.red)),
+                  child: Text(
+                    cart.error!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ),
               PrimaryButton(
                 text: 'Add to cart',
                 isLoading: cart.isLoading,
                 onPressed: () async {
-                  await context.read<CartProvider>().add(product.id, quantity: _qty);
+                  final authProvider = context.read<AuthProvider>();
+                  final success = await context.read<CartProvider>().addToCart(
+                    product: product,
+                    quantity: _qty,
+                    authToken: authProvider.backendAccessToken,
+                  );
                   if (!context.mounted) return;
-                  if (context.read<CartProvider>().error == null) {
+                  if (success) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Added to cart')),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          context.read<CartProvider>().error ??
+                              'Could not add to cart',
+                        ),
+                      ),
                     );
                   }
                 },
@@ -144,4 +183,3 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 }
-

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/utils/money.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/cart_provider.dart';
 import '../../widgets/error_view.dart';
 import '../../widgets/loading_widget.dart';
@@ -12,25 +13,32 @@ class CartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
+    final authToken = context.watch<AuthProvider>().backendAccessToken;
+
+    void reloadCart() {
+      context.read<CartProvider>().loadCart(authToken);
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Cart'),
         actions: [
           IconButton(
-            onPressed: cart.isLoading ? null : () => context.read<CartProvider>().fetch(),
+            onPressed: cart.isLoading ? null : reloadCart,
             icon: const Icon(Icons.refresh),
           ),
         ],
       ),
       body: Builder(
         builder: (context) {
-          if (cart.isLoading) return const LoadingWidget(label: 'Loading cart...');
+          if (cart.isLoading) {
+            return const LoadingWidget(label: 'Loading cart...');
+          }
           if (cart.error != null) {
-            return ErrorView(message: cart.error!, onRetry: () => context.read<CartProvider>().fetch());
+            return ErrorView(message: cart.error!, onRetry: reloadCart);
           }
 
-          final items = cart.items;
+          final items = cart.cartItems;
           if (items.isEmpty) {
             return const Center(child: Text('Your cart is empty.'));
           }
@@ -47,7 +55,10 @@ class CartScreen extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Total', style: TextStyle(fontWeight: FontWeight.w800)),
+                        const Text(
+                          'Total',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
                         Text(
                           formatMoney(cart.total),
                           style: TextStyle(
@@ -70,7 +81,9 @@ class CartScreen extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
-                  subtitle: Text('Qty: ${item.quantity} • ${formatMoney(item.unitPrice)}'),
+                  subtitle: Text(
+                    'Qty: ${item.quantity} • ${formatMoney(item.unitPrice)}',
+                  ),
                   trailing: Text(
                     formatMoney(item.totalPrice),
                     style: const TextStyle(fontWeight: FontWeight.w800),
@@ -84,4 +97,3 @@ class CartScreen extends StatelessWidget {
     );
   }
 }
-
