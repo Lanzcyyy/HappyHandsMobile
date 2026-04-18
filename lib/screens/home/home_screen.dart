@@ -136,10 +136,10 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: 'Logout',
             icon: const Icon(Icons.logout, color: AppTheme.darkBlue),
             onPressed: () async {
+              final navigator = Navigator.of(context);
               await context.read<AuthProvider>().logout();
               if (!mounted) return;
-              Navigator.pushNamedAndRemoveUntil(
-                context,
+              navigator.pushNamedAndRemoveUntil(
                 '/home',
                 (route) => false,
               );

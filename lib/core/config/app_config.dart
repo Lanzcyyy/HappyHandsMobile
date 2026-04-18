@@ -22,12 +22,12 @@ class AppConfig {
   }
 
   static String get staticBaseUrl {
-    final base = apiBaseUrl.replaceAll('/api', '');
+    final base = apiBaseUrl.replaceAll(RegExp(r'/api/?$'), '');
     return '$base/static';
   }
 
   static String get uploadsBaseUrl {
-    final base = apiBaseUrl.replaceAll('/api', '');
+    final base = apiBaseUrl.replaceAll(RegExp(r'/api/?$'), '');
     return '$base/uploads';
   }
 

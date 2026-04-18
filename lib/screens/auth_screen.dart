@@ -264,6 +264,7 @@ class _AuthScreenState extends State<AuthForm> {
     return TabBarView(children: [_buildLoginForm(), _buildRegisterForm()]);
   }
 
+  // ignore: unused_element
   Widget _buildHeader() {
     return Column(
       children: [
@@ -309,6 +310,7 @@ class _AuthScreenState extends State<AuthForm> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildTabBar() {
     return Container(
       height: 46,
@@ -516,18 +518,18 @@ class _AuthScreenState extends State<AuthForm> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(AppConstants.spacingSM),
                         decoration: BoxDecoration(
-                          color: AppTheme.errorRed.withOpacity(0.1),
+                          color: AppTheme.errorRed.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(
                             AppConstants.radiusMD,
                           ),
                           border: Border.all(
-                            color: AppTheme.errorRed.withOpacity(0.3),
+                            color: AppTheme.errorRed.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
                           children: [
                             Icon(
-                              FontAwesomeIcons.exclamationCircle,
+                              FontAwesomeIcons.circleExclamation,
                               color: AppTheme.errorRed,
                               size: 16,
                             ),
@@ -761,18 +763,18 @@ class _AuthScreenState extends State<AuthForm> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(AppConstants.spacingSM),
                         decoration: BoxDecoration(
-                          color: AppTheme.errorRed.withOpacity(0.1),
+                          color: AppTheme.errorRed.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(
                             AppConstants.radiusMD,
                           ),
                           border: Border.all(
-                            color: AppTheme.errorRed.withOpacity(0.3),
+                            color: AppTheme.errorRed.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Row(
                           children: [
                             Icon(
-                              FontAwesomeIcons.exclamationCircle,
+                              FontAwesomeIcons.circleExclamation,
                               color: AppTheme.errorRed,
                               size: 16,
                             ),
@@ -883,6 +885,7 @@ class _AuthScreenState extends State<AuthForm> {
               if (email.isNotEmpty) {
                 try {
                   await context.read<AuthProvider>().resetPassword(email);
+                  if (!context.mounted) return;
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

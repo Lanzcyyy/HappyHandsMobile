@@ -247,7 +247,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         shape: BoxShape.circle,
                         color: _currentImageIndex == entry.key
                             ? AppTheme.primaryBlue
-                            : AppTheme.white.withOpacity(0.6),
+                            : AppTheme.white.withValues(alpha: 0.6),
                         border: Border.all(
                           color: AppTheme.primaryBlue,
                           width: 1,
@@ -299,7 +299,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
         const SizedBox(height: AppConstants.spacingSM),
         Text(
-          product.description ?? 'No description available.',
+          product.description.isEmpty ? 'No description available.' : product.description,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: AppTheme.mediumGray,
             height: 1.5,
@@ -320,8 +320,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
           decoration: BoxDecoration(
             color: (product.stock != null && product.stock! > 0)
-                ? AppTheme.successGreen.withOpacity(0.1)
-                : AppTheme.errorRed.withOpacity(0.1),
+                ? AppTheme.successGreen.withValues(alpha: 0.1)
+                : AppTheme.errorRed.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(AppConstants.radiusSM),
           ),
           child: Row(
@@ -618,7 +618,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(FontAwesomeIcons.shoppingCart, size: 18),
+                          const Icon(FontAwesomeIcons.cartShopping, size: 18),
                           const SizedBox(width: AppConstants.spacingSM),
                           Text(
                             'Add to Cart',
@@ -738,7 +738,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              FontAwesomeIcons.exclamationTriangle,
+              FontAwesomeIcons.triangleExclamation,
               size: 64,
               color: AppTheme.errorRed,
             ),
@@ -809,20 +809,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _addToCart(Product product) async {
-    final authProvider = context.read<AuthProvider>();
-    if (authProvider.user == null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => AuthScreen()),
-      );
-      return;
-    }
-
-    setState(() {
-      _isAddingToCart = true;
-    });
+    setState(() => _isAddingToCart = true);
 
     try {
+      final authProvider = context.read<AuthProvider>();
       final cartProvider = context.read<CartProvider>();
       final success = await cartProvider.addToCart(
         product: product,
@@ -833,6 +823,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       );
 
       if (success) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text(AppConstants.successAddedToCart),
@@ -841,6 +832,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
         );
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(cartProvider.error ?? AppConstants.errorGeneral),
@@ -850,15 +842,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         );
       }
     } finally {
-      setState(() {
-        _isAddingToCart = false;
-      });
+      if (mounted) setState(() => _isAddingToCart = false);
     }
   }
 
   void _buyNow(Product product) {
     // Add to cart and navigate to checkout
     _addToCart(product).then((_) {
+      if (!mounted) return;
+      // ignore: use_build_context_synchronously
       Navigator.pushNamed(context, '/checkout');
     });
   }

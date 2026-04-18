@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import '../models/product.dart';
 import '../services/api_service.dart';
 import '../core/constants/app_constants.dart';
+import '../data/mock_products.dart';
 
 class ProductProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -29,6 +30,13 @@ class ProductProvider extends ChangeNotifier {
   String? _currentSearchQuery;
   String? _currentSortBy;
   String? _currentSortOrder;
+
+  ProductProvider() {
+    // Seed mock data immediately so the UI is never empty
+    _products = List.of(MockProducts.all);
+    _featuredProducts = List.of(MockProducts.featured);
+    _totalItems = _products.length;
+  }
 
   // Getters
   List<Product> get products => List.unmodifiable(_products);
@@ -64,7 +72,6 @@ class ProductProvider extends ChangeNotifier {
   }) async {
     if (refresh) {
       _currentPage = 1;
-      _products.clear();
       _error = null;
     }
 
@@ -84,10 +91,19 @@ class ProductProvider extends ChangeNotifier {
         sortOrder: sortOrder,
       );
 
+      // Merge: keep mock products that aren't returned by the API
+      final apiIds = products.map((p) => p.id).toSet();
+      final mockFallback = MockProducts.all
+          .where((p) =>
+              (category == null || p.category == category) &&
+              !apiIds.contains(p.id))
+          .toList();
+      final merged = [...products, ...mockFallback];
+
       if (refresh || page == 1) {
-        _products = products;
+        _products = merged;
       } else {
-        _products.addAll(products);
+        _products.addAll(merged);
       }
 
       _currentPage = page;
@@ -95,15 +111,22 @@ class ProductProvider extends ChangeNotifier {
       _currentSearchQuery = search;
       _currentSortBy = sortBy;
       _currentSortOrder = sortOrder;
-      
-      // Note: API should return pagination info, for now we'll estimate
       _totalPages = (products.length < limit) ? page : page + 1;
       _totalItems = _products.length;
 
-      developer.log('Loaded ${products.length} products for page $page');
+      developer.log('Loaded ${products.length} products (+ ${mockFallback.length} mock) for page $page');
     } catch (e) {
-      _error = e.toString();
-      developer.log('Error loading products: $e');
+      // API failed — fall back entirely to mock data
+      developer.log('API unavailable, using mock products: $e');
+      final mock = category == null
+          ? MockProducts.all
+          : MockProducts.byCategory(category);
+      if (refresh || page == 1) {
+        _products = List.of(mock);
+      }
+      _totalItems = _products.length;
+      _totalPages = 1;
+      // Don't set _error so the UI shows mock products silently
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -147,15 +170,25 @@ class ProductProvider extends ChangeNotifier {
     try {
       final products = await _apiService.getFeaturedProducts(page: page, limit: limit);
 
+      final apiIds = products.map((p) => p.id).toSet();
+      final mockFallback = MockProducts.featured
+          .where((p) => !apiIds.contains(p.id))
+          .toList();
+      final merged = [...products, ...mockFallback];
+
       if (refresh || page == 1) {
-        _featuredProducts = products;
+        _featuredProducts = merged;
       } else {
-        _featuredProducts.addAll(products);
+        _featuredProducts.addAll(merged);
       }
 
-      developer.log('Loaded ${products.length} featured products');
+      developer.log('Loaded ${products.length} featured products (+ ${mockFallback.length} mock)');
     } catch (e) {
-      developer.log('Error loading featured products: $e');
+      // API failed — use mock featured products silently
+      developer.log('API unavailable for featured, using mock: $e');
+      if (_featuredProducts.isEmpty) {
+        _featuredProducts = List.of(MockProducts.featured);
+      }
     } finally {
       _isLoadingFeatured = false;
       notifyListeners();
@@ -166,6 +199,15 @@ class ProductProvider extends ChangeNotifier {
   Future<void> loadProductById(int productId) async {
     if (_isLoadingProduct) return;
 
+    // Check mock data first for instant display
+    final mockProduct = MockProducts.all
+        .where((p) => p.id == productId)
+        .firstOrNull;
+    if (mockProduct != null) {
+      _selectedProduct = mockProduct;
+      notifyListeners();
+    }
+
     _isLoadingProduct = true;
     _productError = null;
     notifyListeners();
@@ -175,8 +217,10 @@ class ProductProvider extends ChangeNotifier {
       _selectedProduct = product;
       developer.log('Loaded product: ${product.name}');
     } catch (e) {
-      _productError = e.toString();
-      developer.log('Error loading product $productId: $e');
+      if (_selectedProduct == null) {
+        _productError = e.toString();
+      }
+      developer.log('API unavailable for product $productId, using mock: $e');
     } finally {
       _isLoadingProduct = false;
       notifyListeners();
@@ -208,8 +252,15 @@ class ProductProvider extends ChangeNotifier {
       _currentSearchQuery = query;
       developer.log('Found ${products.length} products for query: $query');
     } catch (e) {
-      _searchError = e.toString();
-      developer.log('Error searching products: $e');
+      // Fall back to local mock search
+      developer.log('API search unavailable, searching mock: $e');
+      final q = query.toLowerCase();
+      final mockResults = MockProducts.all.where((p) =>
+          p.name.toLowerCase().contains(q) ||
+          p.description.toLowerCase().contains(q) ||
+          (p.category?.toLowerCase().contains(q) ?? false)).toList();
+      _searchResults = mockResults;
+      _currentSearchQuery = query;
     } finally {
       _isLoadingSearch = false;
       notifyListeners();
@@ -267,16 +318,13 @@ class ProductProvider extends ChangeNotifier {
 
   // Get product by ID from any list
   Product? getProductById(int productId) {
-    return _products.firstWhere(
-      (product) => product.id == productId,
-      orElse: () => _featuredProducts.firstWhere(
-        (product) => product.id == productId,
-        orElse: () => _searchResults.firstWhere(
-          (product) => product.id == productId,
-          orElse: () => _selectedProduct!,
-        ),
-      ),
-    );
+    for (final list in [_products, _featuredProducts, _searchResults]) {
+      for (final p in list) {
+        if (p.id == productId) return p;
+      }
+    }
+    if (_selectedProduct?.id == productId) return _selectedProduct;
+    return null;
   }
 
   // Update product in all lists

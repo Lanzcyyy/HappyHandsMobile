@@ -318,16 +318,16 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppConstants.spacingMD),
                     decoration: BoxDecoration(
-                      color: AppTheme.errorRed.withOpacity(0.1),
+                      color: AppTheme.errorRed.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(AppConstants.radiusMD),
                       border: Border.all(
-                        color: AppTheme.errorRed.withOpacity(0.3),
+                        color: AppTheme.errorRed.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          FontAwesomeIcons.exclamationCircle,
+                          FontAwesomeIcons.circleExclamation,
                           color: AppTheme.errorRed,
                           size: 20,
                         ),
@@ -573,16 +573,16 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     width: double.infinity,
                     padding: const EdgeInsets.all(AppConstants.spacingMD),
                     decoration: BoxDecoration(
-                      color: AppTheme.errorRed.withOpacity(0.1),
+                      color: AppTheme.errorRed.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(AppConstants.radiusMD),
                       border: Border.all(
-                        color: AppTheme.errorRed.withOpacity(0.3),
+                        color: AppTheme.errorRed.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          FontAwesomeIcons.exclamationCircle,
+                          FontAwesomeIcons.circleExclamation,
                           color: AppTheme.errorRed,
                           size: 20,
                         ),
@@ -617,6 +617,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     );
 
     if (authProvider.error == null) {
+      if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -639,6 +640,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     );
 
     if (authProvider.error == null) {
+      if (!mounted) return;
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -690,6 +692,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               if (email.isNotEmpty) {
                 try {
                   await context.read<AuthProvider>().resetPassword(email);
+                  if (!context.mounted) return;
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -699,6 +702,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     ),
                   );
                 } catch (e) {
+                  if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Error: ${e.toString()}'),

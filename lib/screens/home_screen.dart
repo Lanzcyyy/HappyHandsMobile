@@ -183,11 +183,16 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Top picks for your little ones',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppTheme.darkBlue,
-                      fontWeight: FontWeight.w700,
+                  Flexible(
+                    child: Text(
+                      'Top picks for your little ones',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: AppTheme.darkBlue,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   // Product Count
@@ -236,9 +241,10 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Text(
             'Shop by Category',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: AppTheme.darkBlue,
               fontWeight: FontWeight.w700,
+              fontSize: 18,
             ),
           ),
           const SizedBox(height: AppConstants.spacingSM),
@@ -278,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: AppTheme.lightGray,
           borderRadius: BorderRadius.circular(AppConstants.radiusMD),
-          border: Border.all(color: AppTheme.borderGray.withOpacity(0.3)),
+          border: Border.all(color: AppTheme.borderGray.withValues(alpha: 0.3)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -314,9 +320,10 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Text(
                 'All Products',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   color: AppTheme.darkBlue,
                   fontWeight: FontWeight.w700,
+                  fontSize: 18,
                 ),
               ),
               const SizedBox(height: AppConstants.spacingMD),
@@ -398,8 +405,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppTheme.primaryBlue.withOpacity(0.1),
-                  AppTheme.darkBlue.withOpacity(0.1),
+                  AppTheme.primaryBlue.withValues(alpha: 0.1),
+                  AppTheme.darkBlue.withValues(alpha: 0.1),
                 ],
               ),
               borderRadius: BorderRadius.circular(AppConstants.radiusMD),
@@ -439,7 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: isNarrow ? double.infinity : 170,
                   padding: const EdgeInsets.all(AppConstants.spacingMD),
                   decoration: BoxDecoration(
-                    color: AppTheme.successGreen.withOpacity(0.1),
+                    color: AppTheme.successGreen.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(AppConstants.radiusMD),
                   ),
                   child: Column(
@@ -578,7 +585,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: AppTheme.lightGray,
         borderRadius: BorderRadius.circular(AppConstants.radiusMD),
-        border: Border.all(color: AppTheme.borderGray.withOpacity(0.3)),
+        border: Border.all(color: AppTheme.borderGray.withValues(alpha: 0.3)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -626,10 +633,10 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(AppConstants.radiusLG),
-        border: Border.all(color: AppTheme.borderGray.withOpacity(0.7)),
+        border: Border.all(color: AppTheme.borderGray.withValues(alpha: 0.7)),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.darkBlue.withOpacity(0.04),
+            color: AppTheme.darkBlue.withValues(alpha: 0.04),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -643,7 +650,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withOpacity(0.1),
+              color: AppTheme.primaryBlue.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppConstants.radiusMD),
             ),
             child: Icon(icon, color: AppTheme.primaryBlue),
@@ -703,7 +710,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(FontAwesomeIcons.search, size: 64, color: AppTheme.mediumGray),
+            Icon(FontAwesomeIcons.magnifyingGlass, size: 64, color: AppTheme.mediumGray),
             const SizedBox(height: AppConstants.spacingMD),
             Text(
               'No products found',
@@ -730,7 +737,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: AppTheme.lightGray,
         borderRadius: BorderRadius.circular(AppConstants.radiusMD),
-        border: Border.all(color: AppTheme.borderGray.withOpacity(0.3)),
+        border: Border.all(color: AppTheme.borderGray.withValues(alpha: 0.3)),
       ),
       child: const Center(child: Text('No featured products available yet.')),
     );
@@ -742,7 +749,7 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: AppTheme.lightGray,
         borderRadius: BorderRadius.circular(AppConstants.radiusMD),
-        border: Border.all(color: AppTheme.borderGray.withOpacity(0.3)),
+        border: Border.all(color: AppTheme.borderGray.withValues(alpha: 0.3)),
       ),
       child: const Center(child: Text('No products available yet.')),
     );
@@ -756,7 +763,7 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              FontAwesomeIcons.exclamationTriangle,
+              FontAwesomeIcons.triangleExclamation,
               size: 64,
               color: AppTheme.errorRed,
             ),
@@ -840,22 +847,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _addToCart(Product product) async {
-    final authProvider = context.read<AuthProvider>();
-    if (authProvider.user == null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const AuthScreen()),
-      );
-      return;
-    }
-
     final cartProvider = context.read<CartProvider>();
+    final authProvider = context.read<AuthProvider>();
+
     final success = await cartProvider.addToCart(
       product: product,
       quantity: 1,
       authToken: authProvider.backendAccessToken,
     );
 
+    if (!mounted) return;
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

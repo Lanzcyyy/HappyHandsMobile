@@ -31,6 +31,7 @@ class ProductCard extends StatefulWidget {
 
 class _ProductCardState extends State<ProductCard> {
   bool _isHovered = false;
+  // ignore: unused_field
   int _currentImageIndex = 0;
 
   @override
@@ -51,13 +52,13 @@ class _ProductCardState extends State<ProductCard> {
             color: AppTheme.white,
             borderRadius: BorderRadius.circular(AppConstants.radiusMD),
             border: Border.all(
-              color: AppTheme.borderGray.withOpacity(0.3),
+              color: AppTheme.borderGray.withValues(alpha: 0.3),
               width: 1,
             ),
             boxShadow: _isHovered
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -122,53 +123,62 @@ class _ProductCardState extends State<ProductCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // Product Name
-                      Text(
-                        widget.product.name,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.black,
+                      Flexible(
+                        child: Text(
+                          widget.product.name,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.black,
+                            fontSize: 12,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: AppConstants.spacingXS),
+                      const SizedBox(height: 2),
                       // Price and Stock
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           // Price
-                          Text(
-                            '₱${widget.product.price.toStringAsFixed(2)}',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.black,
+                          Flexible(
+                            child: Text(
+                              '₱${widget.product.price.toStringAsFixed(2)}',
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.black,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           // Stock
                           if (widget.product.stock != null)
                             Text(
-                              'Stock: ${widget.product.stock}',
+                              '${widget.product.stock}',
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                 color: AppTheme.mediumGray,
+                                fontSize: 10,
                               ),
                             ),
                         ],
                       ),
-                      const SizedBox(height: AppConstants.spacingSM),
+                      const SizedBox(height: 4),
                       // Add to Cart Button
                       if (widget.showAddToCart)
                         SizedBox(
                           width: double.infinity,
-                          height: 32,
+                          height: 28,
                           child: ElevatedButton(
                             onPressed: widget.onAddToCart,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.primaryBlue,
                               foregroundColor: AppTheme.white,
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 6),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(AppConstants.radiusLG),
                               ),
@@ -176,15 +186,13 @@ class _ProductCardState extends State<ProductCard> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  FontAwesomeIcons.shoppingCart,
-                                  size: 12,
-                                ),
+                                const Icon(FontAwesomeIcons.cartShopping, size: 10),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Add',
                                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                     fontWeight: FontWeight.w600,
+                                    fontSize: 11,
                                   ),
                                 ),
                               ],

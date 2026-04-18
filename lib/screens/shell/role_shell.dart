@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/auth_provider.dart';
 import '../../providers/role_provider.dart';
 import '../../models/role.dart';
 import '../../widgets/loading_widget.dart';
@@ -33,8 +32,9 @@ class _RoleShellState extends State<RoleShell> {
   @override
   Widget build(BuildContext context) {
     final role = context.watch<RoleProvider>();
-    if (role.isLoading)
+    if (role.isLoading) {
       return const Scaffold(body: LoadingWidget(label: 'Loading roles...'));
+    }
     if (role.error != null) {
       return Scaffold(
         body: ErrorView(

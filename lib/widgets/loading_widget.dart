@@ -110,7 +110,7 @@ class CartItemLoading extends StatelessWidget {
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(AppConstants.radiusMD),
         border: Border.all(
-          color: AppTheme.borderGray.withOpacity(0.3),
+          color: AppTheme.borderGray.withValues(alpha: 0.3),
         ),
       ),
       child: Row(

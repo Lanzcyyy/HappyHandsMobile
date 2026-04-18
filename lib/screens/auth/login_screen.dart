@@ -10,11 +10,3 @@ class LoginScreen extends StatelessWidget {
     return const AuthScreen(role: AuthRole.user);
   }
 }
-          fontSize: 13,
-          color: AppTheme.mediumGray.withValues(alpha: 0.6),
-        ),
-      ),
-      validator: validator,
-    );
-  }
-}

@@ -4,7 +4,6 @@ import 'dart:developer' as developer;
 import '../models/cart_item.dart';
 import '../models/product.dart';
 import '../services/api_service.dart';
-import '../core/constants/app_constants.dart';
 
 class CartProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -19,26 +18,38 @@ class CartProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isUpdating => _isUpdating;
   String? get error => _error;
-  
-  int get itemCount {
-    return _cartItems.fold(0, (sum, item) => sum + item.quantity);
-  }
-  
-  double get subtotal {
-    return _cartItems.fold(0.0, (sum, item) => sum + item.subtotal);
-  }
-  
-  double get shippingCost => itemCount > 0 ? 30.0 : 0.0; // Flat rate shipping from web
-  
+
+  int get itemCount => _cartItems.fold(0, (sum, item) => sum + item.quantity);
+  double get subtotal => _cartItems.fold(0.0, (sum, item) => sum + item.subtotal);
+  double get shippingCost => itemCount > 0 ? 30.0 : 0.0;
   double get total => subtotal + shippingCost;
-  
   bool get isEmpty => _cartItems.isEmpty;
   bool get isNotEmpty => _cartItems.isNotEmpty;
+
+  // ── Local cart helpers ──────────────────────────────────────────────────
+  int _nextLocalId = 1000;
+
+  CartItem _makeLocalItem({
+    required Product product,
+    required int quantity,
+    String? size,
+    String? color,
+  }) {
+    return CartItem(
+      id: _nextLocalId++,
+      quantity: quantity,
+      unitPrice: product.price,
+      totalPrice: product.price * quantity,
+      product: product,
+      size: size,
+      color: color,
+      addedAt: DateTime.now(),
+    );
+  }
 
   // Load cart from API
   Future<void> loadCart(String? authToken) async {
     if (authToken == null || authToken.isEmpty) {
-      _cartItems.clear();
       notifyListeners();
       return;
     }
@@ -52,8 +63,7 @@ class CartProvider extends ChangeNotifier {
       _cartItems = cartItems;
       developer.log('Loaded ${cartItems.length} items in cart');
     } catch (e) {
-      _error = e.toString();
-      developer.log('Error loading cart: $e');
+      developer.log('Cart API unavailable, keeping local cart: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -68,48 +78,61 @@ class CartProvider extends ChangeNotifier {
     String? color,
     String? authToken,
   }) async {
-    if (authToken == null || authToken.isEmpty) {
-      _error = AppConstants.errorAuth;
-      notifyListeners();
-      return false;
-    }
-
     _isUpdating = true;
     _error = null;
     notifyListeners();
 
     try {
-      // Check if item already exists with same variants
-      final existingItemIndex = _cartItems.indexWhere(
-        (item) => item.product.id == product.id && 
-                  item.size == size && 
-                  item.color == color,
+      final existingIndex = _cartItems.indexWhere(
+        (item) =>
+            item.product.id == product.id &&
+            item.size == size &&
+            item.color == color,
       );
 
-      if (existingItemIndex != -1) {
-        // Update existing item quantity
-        final existingItem = _cartItems[existingItemIndex];
-        final updatedItem = await _apiService.updateCartItem(
-          cartItemId: existingItem.id,
-          quantity: existingItem.quantity + quantity,
-          authToken: authToken,
+      if (authToken != null && authToken.isNotEmpty) {
+        try {
+          if (existingIndex != -1) {
+            final existing = _cartItems[existingIndex];
+            final updated = await _apiService.updateCartItem(
+              cartItemId: existing.id,
+              quantity: existing.quantity + quantity,
+              authToken: authToken,
+            );
+            _cartItems[existingIndex] = updated;
+          } else {
+            final cartItem = await _apiService.addToCart(
+              productId: product.id,
+              quantity: quantity,
+              size: size,
+              color: color,
+              authToken: authToken,
+            );
+            _cartItems.add(cartItem);
+          }
+          developer.log('Added ${product.name} to cart via API');
+          return true;
+        } catch (e) {
+          developer.log('Cart API failed, adding locally: $e');
+        }
+      }
+
+      // Local fallback
+      if (existingIndex != -1) {
+        final existing = _cartItems[existingIndex];
+        _cartItems[existingIndex] = existing.copyWith(
+          quantity: existing.quantity + quantity,
+          totalPrice: existing.product.price * (existing.quantity + quantity),
         );
-        
-        _cartItems[existingItemIndex] = updatedItem;
       } else {
-        // Add new item
-        final cartItem = await _apiService.addToCart(
-          productId: product.id,
+        _cartItems.add(_makeLocalItem(
+          product: product,
           quantity: quantity,
           size: size,
           color: color,
-          authToken: authToken,
-        );
-        
-        _cartItems.add(cartItem);
+        ));
       }
-
-      developer.log('Added ${product.name} to cart');
+      developer.log('Added ${product.name} to local cart');
       return true;
     } catch (e) {
       _error = e.toString();
@@ -127,12 +150,6 @@ class CartProvider extends ChangeNotifier {
     required int quantity,
     String? authToken,
   }) async {
-    if (authToken == null || authToken.isEmpty) {
-      _error = AppConstants.errorAuth;
-      notifyListeners();
-      return false;
-    }
-
     if (quantity <= 0) {
       return removeFromCart(cartItem: cartItem, authToken: authToken);
     }
@@ -142,22 +159,30 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final updatedItem = await _apiService.updateCartItem(
-        cartItemId: cartItem.id,
-        quantity: quantity,
-        authToken: authToken,
-      );
-
-      final index = _cartItems.indexWhere((item) => item.id == cartItem.id);
-      if (index != -1) {
-        _cartItems[index] = updatedItem;
+      if (authToken != null && authToken.isNotEmpty) {
+        try {
+          final updatedItem = await _apiService.updateCartItem(
+            cartItemId: cartItem.id,
+            quantity: quantity,
+            authToken: authToken,
+          );
+          final index = _cartItems.indexWhere((item) => item.id == cartItem.id);
+          if (index != -1) _cartItems[index] = updatedItem;
+          return true;
+        } catch (_) {}
       }
 
-      developer.log('Updated ${cartItem.product.name} quantity to $quantity');
+      // Local fallback
+      final index = _cartItems.indexWhere((item) => item.id == cartItem.id);
+      if (index != -1) {
+        _cartItems[index] = _cartItems[index].copyWith(
+          quantity: quantity,
+          totalPrice: _cartItems[index].product.price * quantity,
+        );
+      }
       return true;
     } catch (e) {
       _error = e.toString();
-      developer.log('Error updating cart item: $e');
       return false;
     } finally {
       _isUpdating = false;
@@ -170,28 +195,24 @@ class CartProvider extends ChangeNotifier {
     required CartItem cartItem,
     String? authToken,
   }) async {
-    if (authToken == null || authToken.isEmpty) {
-      _error = AppConstants.errorAuth;
-      notifyListeners();
-      return false;
-    }
-
     _isUpdating = true;
     _error = null;
     notifyListeners();
 
     try {
-      await _apiService.removeFromCart(
-        cartItemId: cartItem.id,
-        authToken: authToken,
-      );
-
+      if (authToken != null && authToken.isNotEmpty) {
+        try {
+          await _apiService.removeFromCart(
+            cartItemId: cartItem.id,
+            authToken: authToken,
+          );
+        } catch (_) {}
+      }
       _cartItems.removeWhere((item) => item.id == cartItem.id);
       developer.log('Removed ${cartItem.product.name} from cart');
       return true;
     } catch (e) {
       _error = e.toString();
-      developer.log('Error removing from cart: $e');
       return false;
     } finally {
       _isUpdating = false;
@@ -201,24 +222,21 @@ class CartProvider extends ChangeNotifier {
 
   // Clear entire cart
   Future<bool> clearCart(String? authToken) async {
-    if (authToken == null || authToken.isEmpty) {
-      _error = AppConstants.errorAuth;
-      notifyListeners();
-      return false;
-    }
-
     _isUpdating = true;
     _error = null;
     notifyListeners();
 
     try {
-      await _apiService.clearCart(authToken);
+      if (authToken != null && authToken.isNotEmpty) {
+        try {
+          await _apiService.clearCart(authToken);
+        } catch (_) {}
+      }
       _cartItems.clear();
       developer.log('Cleared cart');
       return true;
     } catch (e) {
       _error = e.toString();
-      developer.log('Error clearing cart: $e');
       return false;
     } finally {
       _isUpdating = false;
@@ -226,7 +244,6 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  // Get cart item by product ID and variants
   CartItem? getCartItem({
     required int productId,
     String? size,
@@ -234,47 +251,35 @@ class CartProvider extends ChangeNotifier {
   }) {
     try {
       return _cartItems.firstWhere(
-        (item) => item.product.id == productId && 
-                  item.size == size && 
-                  item.color == color,
+        (item) =>
+            item.product.id == productId &&
+            item.size == size &&
+            item.color == color,
       );
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
 
-  // Get quantity of product in cart
-  int getProductQuantity({
-    required int productId,
-    String? size,
-    String? color,
-  }) {
-    final item = getCartItem(productId: productId, size: size, color: color);
-    return item?.quantity ?? 0;
+  int getProductQuantity({required int productId, String? size, String? color}) {
+    return getCartItem(productId: productId, size: size, color: color)?.quantity ?? 0;
   }
 
-  // Check if product is in cart
-  bool isProductInCart({
-    required int productId,
-    String? size,
-    String? color,
-  }) {
+  bool isProductInCart({required int productId, String? size, String? color}) {
     return getCartItem(productId: productId, size: size, color: color) != null;
   }
 
-  // Increment item quantity
   Future<bool> incrementQuantity({
     required CartItem cartItem,
     String? authToken,
   }) async {
-    return await updateItemQuantity(
+    return updateItemQuantity(
       cartItem: cartItem,
       quantity: cartItem.quantity + 1,
       authToken: authToken,
     );
   }
 
-  // Decrement item quantity
   Future<bool> decrementQuantity({
     required CartItem cartItem,
     String? authToken,
@@ -282,28 +287,24 @@ class CartProvider extends ChangeNotifier {
     if (cartItem.quantity <= 1) {
       return removeFromCart(cartItem: cartItem, authToken: authToken);
     }
-    
-    return await updateItemQuantity(
+    return updateItemQuantity(
       cartItem: cartItem,
       quantity: cartItem.quantity - 1,
       authToken: authToken,
     );
   }
 
-  // Clear errors
   void clearErrors() {
     _error = null;
     notifyListeners();
   }
 
-  // Clear cart locally (for logout)
   void clearLocalCart() {
     _cartItems.clear();
     _error = null;
     notifyListeners();
   }
 
-  // Get cart summary for checkout
   Map<String, dynamic> getCartSummary() {
     return {
       'itemCount': itemCount,
@@ -311,19 +312,19 @@ class CartProvider extends ChangeNotifier {
       'shippingCost': shippingCost,
       'total': total,
       'isEmpty': isEmpty,
-      'items': cartItems.map((item) => {
-        'id': item.id,
-        'productId': item.product.id,
-        'name': item.product.name,
-        'price': item.product.price,
-        'quantity': item.quantity,
-        'subtotal': item.subtotal,
-        'size': item.size,
-        'color': item.color,
-        'imageUrl': item.product.imageUrl,
-      }).toList(),
+      'items': cartItems
+          .map((item) => {
+                'id': item.id,
+                'productId': item.product.id,
+                'name': item.product.name,
+                'price': item.product.price,
+                'quantity': item.quantity,
+                'subtotal': item.subtotal,
+                'size': item.size,
+                'color': item.color,
+                'imageUrl': item.product.imageUrl,
+              })
+          .toList(),
     };
   }
-
 }
-

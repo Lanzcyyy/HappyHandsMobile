@@ -117,7 +117,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         color: AppTheme.lightGray,
         borderRadius: BorderRadius.circular(AppConstants.radiusMD),
         border: Border.all(
-          color: AppTheme.borderGray.withOpacity(0.3),
+          color: AppTheme.borderGray.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -329,7 +329,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             labelText: 'Address',
             hintText: 'Enter your complete address',
             prefixIcon: const Icon(
-              FontAwesomeIcons.home,
+              FontAwesomeIcons.house,
               color: AppTheme.mediumGray,
             ),
             border: OutlineInputBorder(
@@ -485,7 +485,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             padding: const EdgeInsets.all(AppConstants.spacingMD),
             decoration: BoxDecoration(
               color: _selectedPaymentMethod == 'cod'
-                  ? AppTheme.primaryBlue.withOpacity(0.1)
+                  ? AppTheme.primaryBlue.withValues(alpha: 0.1)
                   : AppTheme.white,
               border: Border.all(
                 color: _selectedPaymentMethod == 'cod'
@@ -528,7 +528,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
                 Radio<String>(
                   value: 'cod',
+                  // ignore: deprecated_member_use
                   groupValue: _selectedPaymentMethod,
+                  // ignore: deprecated_member_use
                   onChanged: (value) {
                     setState(() {
                       _selectedPaymentMethod = value!;
@@ -554,7 +556,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             padding: const EdgeInsets.all(AppConstants.spacingMD),
             decoration: BoxDecoration(
               color: _selectedPaymentMethod == 'card'
-                  ? AppTheme.primaryBlue.withOpacity(0.1)
+                  ? AppTheme.primaryBlue.withValues(alpha: 0.1)
                   : AppTheme.white,
               border: Border.all(
                 color: _selectedPaymentMethod == 'card'
@@ -597,7 +599,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
                 Radio<String>(
                   value: 'card',
+                  // ignore: deprecated_member_use
                   groupValue: _selectedPaymentMethod,
+                  // ignore: deprecated_member_use
                   onChanged: (value) {
                     setState(() {
                       _selectedPaymentMethod = value!;
@@ -823,7 +827,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              FontAwesomeIcons.shoppingCart,
+              FontAwesomeIcons.cartShopping,
               size: 64,
               color: AppTheme.mediumGray,
             ),
@@ -881,19 +885,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       await Future.delayed(const Duration(seconds: 3));
 
       // Clear cart after successful order
+      if (!mounted) return;
       final authProvider = context.read<AuthProvider>();
       await cartProvider.clearCart(authProvider.backendAccessToken);
 
       // Show success message
-      if (mounted) {
-        showDialog(
+      if (!mounted) return;
+      showDialog(
           context: context,
           barrierDismissible: false,
           builder: (context) => AlertDialog(
             title: Row(
               children: [
                 Icon(
-                  FontAwesomeIcons.checkCircle,
+                  FontAwesomeIcons.circleCheck,
                   color: AppTheme.successGreen,
                   size: 24,
                 ),
@@ -938,7 +943,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ],
           ),
         );
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

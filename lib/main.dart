@@ -27,14 +27,14 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ProxyProvider<AuthProvider, ApiClient>(
-          update: (_, authProvider, __) {
+          update: (context, authProvider, previous) {
             return ApiClient(
               tokenProvider: () async => authProvider.getIdToken(),
             );
           },
         ),
         ProxyProvider<ApiClient, FlaskApiService>(
-          update: (_, apiClient, __) => FlaskApiService(apiClient),
+          update: (context, apiClient, previous) => FlaskApiService(apiClient),
         ),
         ChangeNotifierProvider(
           create: (context) =>

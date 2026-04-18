@@ -44,7 +44,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         color: AppTheme.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -69,13 +69,70 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
                 // Logo/Title
                 Expanded(
-                  child: Text(
-                    title,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: AppTheme.darkBlue,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  child: title == 'Happy Hands'
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: const BoxDecoration(
+                                color: AppTheme.primaryBlue,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  '👶',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ),
+                            ),
+                            // Only show text when search bar is NOT shown (non-home screens)
+                            // or on wider screens
+                            if (!showSearch) ...[
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  'Happy Hands',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: AppTheme.darkBlue,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ] else ...[
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    // Hide text if constrained width is too small
+                                    if (constraints.maxWidth < 60) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Text(
+                                      'Happy Hands',
+                                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                        color: AppTheme.darkBlue,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 14,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ],
+                        )
+                      : Text(
+                          title,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: AppTheme.darkBlue,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                 ),
 
                 // Search Bar (if shown)
@@ -92,7 +149,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                         decoration: InputDecoration(
                           hintText: 'Search toys...',
                           prefixIcon: const Icon(
-                            FontAwesomeIcons.search,
+                            FontAwesomeIcons.magnifyingGlass,
                             size: 16,
                             color: AppTheme.mediumGray,
                           ),
@@ -153,7 +210,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                           icon: Stack(
                             children: [
                               const Icon(
-                                FontAwesomeIcons.shoppingCart,
+                                FontAwesomeIcons.cartShopping,
                                 color: AppTheme.mediumGray,
                                 size: 20,
                               ),

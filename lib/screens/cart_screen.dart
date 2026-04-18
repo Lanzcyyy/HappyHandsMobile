@@ -4,13 +4,11 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../providers/cart_provider.dart';
-import '../providers/auth_provider.dart';
 import '../widgets/loading_widget.dart';
 import '../widgets/custom_app_bar.dart';
 import '../core/theme/app_theme.dart';
 import '../core/constants/app_constants.dart';
 import '../models/cart_item.dart';
-import '../screens/auth_screen.dart';
 import '../screens/checkout_screen.dart';
 
 class CartScreen extends StatefulWidget {
@@ -24,12 +22,7 @@ class _CartScreenState extends State<CartScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = context.read<AuthProvider>();
-      if (authProvider.user != null) {
-        context.read<CartProvider>().loadCart(authProvider.backendAccessToken);
-      }
-    });
+    // Local cart is always available — no auth needed
   }
 
   @override
@@ -43,12 +36,6 @@ class _CartScreenState extends State<CartScreen> {
       ),
       body: Consumer<CartProvider>(
         builder: (context, cartProvider, child) {
-          // Check if user is logged in
-          final authProvider = context.read<AuthProvider>();
-          if (authProvider.user == null) {
-            return _buildLoginPrompt();
-          }
-
           if (cartProvider.isLoading) {
             return const LoadingWidget();
           }
@@ -67,58 +54,6 @@ class _CartScreenState extends State<CartScreen> {
     );
   }
 
-  Widget _buildLoginPrompt() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppConstants.spacingXL),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              FontAwesomeIcons.userLock,
-              size: 64,
-              color: AppTheme.mediumGray,
-            ),
-            const SizedBox(height: AppConstants.spacingMD),
-            Text(
-              'Login Required',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: AppTheme.darkBlue,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: AppConstants.spacingSM),
-            Text(
-              'Please login to view your shopping cart.',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppTheme.mediumGray,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppConstants.spacingXL),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AuthScreen()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryBlue,
-                foregroundColor: AppTheme.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppConstants.spacingXL,
-                  vertical: AppConstants.spacingMD,
-                ),
-              ),
-              child: const Text('Login'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildEmptyCart() {
     return Center(
       child: Padding(
@@ -127,7 +62,7 @@ class _CartScreenState extends State<CartScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              FontAwesomeIcons.shoppingCart,
+              FontAwesomeIcons.cartShopping,
               size: 64,
               color: AppTheme.mediumGray,
             ),
@@ -174,7 +109,7 @@ class _CartScreenState extends State<CartScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              FontAwesomeIcons.exclamationTriangle,
+              FontAwesomeIcons.triangleExclamation,
               size: 64,
               color: AppTheme.errorRed,
             ),
@@ -196,10 +131,7 @@ class _CartScreenState extends State<CartScreen> {
             const SizedBox(height: AppConstants.spacingLG),
             ElevatedButton(
               onPressed: () {
-                final authProvider = context.read<AuthProvider>();
-                if (authProvider.user != null) {
-                  context.read<CartProvider>().loadCart(authProvider.backendAccessToken);
-                }
+                context.read<CartProvider>().loadCart(null);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryBlue,
@@ -242,11 +174,11 @@ class _CartScreenState extends State<CartScreen> {
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(AppConstants.radiusMD),
         border: Border.all(
-          color: AppTheme.borderGray.withOpacity(0.3),
+          color: AppTheme.borderGray.withValues(alpha: 0.3),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -261,13 +193,13 @@ class _CartScreenState extends State<CartScreen> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppConstants.radiusMD),
               border: Border.all(
-                color: AppTheme.borderGray.withOpacity(0.3),
+                color: AppTheme.borderGray.withValues(alpha: 0.3),
               ),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppConstants.radiusMD),
               child: CachedNetworkImage(
-                imageUrl: cartItem.product.imageUrl ?? cartItem.product.imageUrls.firstOrNull ?? '',
+                imageUrl: cartItem.product.imageUrl ?? (cartItem.product.imageUrls.isNotEmpty ? cartItem.product.imageUrls.first : '') ,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
                   color: AppTheme.lightGray,
@@ -453,7 +385,7 @@ class _CartScreenState extends State<CartScreen> {
         color: AppTheme.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, -4),
           ),
@@ -567,19 +499,11 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _incrementQuantity(CartItem cartItem, CartProvider cartProvider) async {
-    final authProvider = context.read<AuthProvider>();
-    await cartProvider.incrementQuantity(
-      cartItem: cartItem,
-      authToken: authProvider.backendAccessToken,
-    );
+    await cartProvider.incrementQuantity(cartItem: cartItem);
   }
 
   Future<void> _decrementQuantity(CartItem cartItem, CartProvider cartProvider) async {
-    final authProvider = context.read<AuthProvider>();
-    await cartProvider.decrementQuantity(
-      cartItem: cartItem,
-      authToken: authProvider.backendAccessToken,
-    );
+    await cartProvider.decrementQuantity(cartItem: cartItem);
   }
 
   Future<void> _removeFromCart(CartItem cartItem, CartProvider cartProvider) async {
@@ -602,11 +526,8 @@ class _CartScreenState extends State<CartScreen> {
     );
 
     if (shouldRemove == true) {
-      final authProvider = context.read<AuthProvider>();
-      await cartProvider.removeFromCart(
-        cartItem: cartItem,
-        authToken: authProvider.backendAccessToken,
-      );
+      if (!mounted) return;
+      await cartProvider.removeFromCart(cartItem: cartItem);
     }
   }
 
@@ -618,14 +539,6 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   void _navigateToProfile() {
-    final authProvider = context.read<AuthProvider>();
-    if (authProvider.user == null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const AuthScreen()),
-      );
-    } else {
-      // Navigate to profile screen (to be implemented)
-    }
+    Navigator.pushNamed(context, '/auth');
   }
 }

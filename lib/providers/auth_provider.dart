@@ -304,6 +304,8 @@ class AuthProvider extends ChangeNotifier {
     return 'user';
   }
 
+  // Unused: kept for future role-mismatch UI messaging
+  // ignore: unused_element
   String _roleMismatchMessage(String role) {
     return 'This account is not registered as a ${_normalizeRole(role)}';
   }

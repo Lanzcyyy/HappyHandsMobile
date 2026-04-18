@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../core/theme/app_theme.dart';
 import '../core/constants/app_constants.dart';
@@ -75,11 +76,11 @@ class _HeroCarouselState extends State<HeroCarousel> {
               child: Center(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -102,11 +103,11 @@ class _HeroCarouselState extends State<HeroCarousel> {
               child: Center(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withValues(alpha: 0.9),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -140,7 +141,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
                         shape: BoxShape.circle,
                         color: _currentIndex == entry.key
                             ? AppTheme.primaryBlue
-                            : AppTheme.white.withOpacity(0.6),
+                            : AppTheme.white.withValues(alpha: 0.6),
                         border: Border.all(
                           color: AppTheme.primaryBlue,
                           width: 1,
@@ -306,6 +307,9 @@ class _HeroCarouselState extends State<HeroCarousel> {
   }
 
   Widget _buildCarouselImage(String imageUrl, {required bool isMobile}) {
+    final h = isMobile ? 170.0 : 300.0;
+    final w = isMobile ? 280.0 : 400.0;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppConstants.radiusLG),
       child: Container(
@@ -313,56 +317,49 @@ class _HeroCarouselState extends State<HeroCarousel> {
         constraints: isMobile
             ? const BoxConstraints(maxHeight: 190, maxWidth: 280)
             : const BoxConstraints(maxHeight: 360, maxWidth: 450),
-        child: Image.network(
-          imageUrl,
+        child: CachedNetworkImage(
+          imageUrl: imageUrl,
           fit: BoxFit.contain,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              height: isMobile ? 170 : 300,
-              width: isMobile ? 280 : 400,
-              decoration: BoxDecoration(
-                color: AppTheme.white.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(AppConstants.radiusMD),
+          placeholder: (context, url) => Container(
+            height: h,
+            width: w,
+            decoration: BoxDecoration(
+              color: AppTheme.white.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(AppConstants.radiusMD),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryBlue),
               ),
-              child: const Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    AppTheme.primaryBlue,
+            ),
+          ),
+          errorWidget: (context, url, error) => Container(
+            height: h,
+            width: w,
+            decoration: BoxDecoration(
+              color: AppTheme.white.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(AppConstants.radiusMD),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.image_not_supported,
+                  size: isMobile ? 40 : 48,
+                  color: AppTheme.darkBlue.withValues(alpha: 0.5),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Image not available',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.darkBlue.withValues(alpha: 0.7),
+                    fontSize: isMobile ? 12 : 14,
                   ),
                 ),
-              ),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              height: isMobile ? 170 : 300,
-              width: isMobile ? 280 : 400,
-              decoration: BoxDecoration(
-                color: AppTheme.white.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(AppConstants.radiusMD),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.image_not_supported,
-                    size: isMobile ? 40 : 48,
-                    color: AppTheme.darkBlue.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Image not available',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.darkBlue.withValues(alpha: 0.7),
-                      fontSize: isMobile ? 12 : 14,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+              ],
+            ),
+          ),
         ),
       ),
     );
