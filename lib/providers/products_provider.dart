@@ -1,13 +1,14 @@
 import 'package:flutter/foundation.dart';
+import 'dart:developer' as developer;
 
-import '../core/network/api_exceptions.dart';
 import '../models/product.dart';
-import '../services/flask_api_service.dart';
+import '../services/firebase_database_service.dart'; // Updated Service
 
 class ProductsProvider extends ChangeNotifier {
-  final FlaskApiService _api;
+  final FirebaseDatabaseService _dbService;
 
-  ProductsProvider(this._api);
+  // Constructor now takes the Firebase service
+  ProductsProvider(this._dbService);
 
   bool _isLoading = false;
   String? _error;
@@ -21,16 +22,21 @@ class ProductsProvider extends ChangeNotifier {
     _isLoading = true;
     _error = null;
     notifyListeners();
+    
     try {
-      _items = await _api.fetchProducts();
-    } on ApiException catch (e) {
-      _error = e.message;
+      // 1. Fetch raw data from Firebase service
+      final List<Map<String, dynamic>> data = await _dbService.getProducts();
+      
+      // 2. Map the data to your Product model
+      _items = data.map((json) => Product.fromJson(json)).toList();
+      
+      developer.log("Successfully loaded ${_items.length} products from Firebase.");
     } catch (e) {
-      _error = e.toString();
+      _error = "Failed to load products: ${e.toString()}";
+      developer.log("Error in ProductsProvider: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 }
-
