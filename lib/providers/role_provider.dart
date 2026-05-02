@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 
 import '../models/role.dart';
 
+/// Simplified RoleProvider — roles come from AuthProvider (MySQL/Flask).
+/// Firebase Auth is no longer used for role lookup.
 class RoleProvider extends ChangeNotifier {
   RoleProvider();
 
@@ -17,43 +17,20 @@ class RoleProvider extends ChangeNotifier {
   List<AppRole> get availableRoles => _available;
   AppRole get selectedRole => _selected;
 
-  Future<void> refresh() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      _available = const [AppRole.user];
-      _selected = AppRole.user;
-      _error = null;
-      notifyListeners();
-      return;
-    }
-
-    _isLoading = true;
+  /// Call this with the active role string from AuthProvider after login.
+  void setRoleFromString(String? roleKey) {
+    final role = roleKey == null ? null : AppRoleX.fromKey(roleKey);
+    _available = role == null ? const [AppRole.user] : [role];
+    _selected = _available.first;
     _error = null;
     notifyListeners();
+  }
 
-    try {
-      final snapshot = await FirebaseDatabase.instance
-          .ref('users/${user.uid}')
-          .get();
-      final value = snapshot.value;
-      final data = value is Map ? value : null;
-      final storedRole = data?['role']?.toString().trim().toLowerCase();
-      final role = storedRole == null ? null : AppRoleX.fromKey(storedRole);
-
-      _available = role == null ? const [AppRole.user] : [role];
-      _selected = _available.first;
-
-      if (role == null) {
-        _error = 'Account setup incomplete';
-      }
-    } catch (e) {
-      _error = e.toString();
-      _available = const [AppRole.user];
-      _selected = AppRole.user;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
+  Future<void> refresh() async {
+    // No-op: roles are now managed by AuthProvider via MySQL.
+    // Kept for API compatibility with RoleShell.
+    _isLoading = false;
+    notifyListeners();
   }
 
   void select(AppRole role) {

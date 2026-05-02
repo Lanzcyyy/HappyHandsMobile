@@ -11,6 +11,7 @@ import '../widgets/loading_widget.dart';
 import '../widgets/custom_app_bar.dart';
 import '../core/theme/app_theme.dart';
 import '../core/constants/app_constants.dart';
+import '../core/config/app_config.dart';
 import '../models/product.dart';
 import '../screens/product_detail_screen.dart';
 import '../screens/home/categories_screen.dart';
@@ -119,14 +120,14 @@ class _HomeScreenState extends State<HomeScreen> {
           // Categories Section
           _buildCategoriesSection(),
 
-          // All Products Section
+          // All Products Section (4-col grid + pagination)
           _buildAllProductsSection(),
 
-          // Features Section
+          // Features Section (banner + feature cards)
           _buildFeaturesSection(),
 
-          // Bottom padding
-          const SizedBox(height: AppConstants.spacingXXL),
+          // Footer (Become a Seller / Rider)
+          _buildFooter(),
         ],
       ),
     );
@@ -310,58 +311,75 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ── All Products: 4-column grid + pagination + footer ────────────────────
+
+  static const int _pageSize = 12; // items per page
+  int _currentPage = 1;
+
+  int get _totalPages {
+    final provider = context.read<ProductProvider>();
+    final total = provider.products.length;
+    return (total / _pageSize).ceil().clamp(1, 999);
+  }
+
+  List<Product> get _pagedProducts {
+    final provider = context.read<ProductProvider>();
+    final all = provider.products;
+    final start = (_currentPage - 1) * _pageSize;
+    final end = (start + _pageSize).clamp(0, all.length);
+    if (start >= all.length) return [];
+    return all.sublist(start, end);
+  }
+
   Widget _buildAllProductsSection() {
     return Consumer<ProductProvider>(
       builder: (context, productProvider, child) {
         return Container(
-          padding: const EdgeInsets.all(AppConstants.spacingLG),
+          padding: const EdgeInsets.fromLTRB(
+            AppConstants.spacingLG,
+            AppConstants.spacingLG,
+            AppConstants.spacingLG,
+            0,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'All Products',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppTheme.darkBlue,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18,
-                ),
+              // ── Header ──────────────────────────────────────────────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'All Products',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppTheme.darkBlue,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                    ),
+                  ),
+                  if (productProvider.products.isNotEmpty)
+                    Text(
+                      '${productProvider.products.length} items',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppTheme.mediumGray,
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: AppConstants.spacingMD),
 
-              // Products Grid
+              // ── Grid ────────────────────────────────────────────────────
               if (productProvider.isLoading && productProvider.products.isEmpty)
                 const LoadingWidget(height: 300)
               else if (productProvider.products.isEmpty)
                 _buildEmptyProducts()
               else
-                Column(
-                  children: [
-                    _buildProductGrid(productProvider.products),
+                _buildFourColumnGrid(_pagedProducts),
 
-                    // Load More Button
-                    if (productProvider.hasMorePages)
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          top: AppConstants.spacingLG,
-                        ),
-                        child: productProvider.isLoading
-                            ? const LoadingWidget(height: 50)
-                            : ElevatedButton(
-                                onPressed: () =>
-                                    productProvider.loadMoreProducts(),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.primaryBlue,
-                                  foregroundColor: AppTheme.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppConstants.spacingXL,
-                                    vertical: AppConstants.spacingMD,
-                                  ),
-                                ),
-                                child: const Text('Load More'),
-                              ),
-                      ),
-                  ],
-                ),
+              // ── Pagination ───────────────────────────────────────────────
+              if (productProvider.products.isNotEmpty) ...[
+                const SizedBox(height: AppConstants.spacingLG),
+                _buildPagination(productProvider),
+              ],
             ],
           ),
         );
@@ -369,27 +387,227 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildProductGrid(List<Product> products) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.75,
-        crossAxisSpacing: AppConstants.spacingMD,
-        mainAxisSpacing: AppConstants.spacingMD,
-      ),
-      itemCount: products.length,
-      itemBuilder: (context, index) {
-        final product = products[index];
-        return ProductCard(
-          product: product,
-          onTap: () => _navigateToProductDetail(product),
-          onAddToCart: () => _addToCart(product),
+  Widget _buildFourColumnGrid(List<Product> products) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // On very narrow screens fall back to 2 columns
+        final cols = constraints.maxWidth < 400 ? 2 : 4;
+        final spacing = 8.0;
+        final itemW = (constraints.maxWidth - spacing * (cols - 1)) / cols;
+        // image ~55 % + info ~45 % of card height
+        final itemH = itemW * 1.55;
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: cols,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: spacing,
+            childAspectRatio: itemW / itemH,
+          ),
+          itemCount: products.length,
+          itemBuilder: (context, index) {
+            final product = products[index];
+            return _buildCompactProductCard(product);
+          },
         );
       },
     );
   }
+
+  /// Compact card designed for 4-column layout.
+  Widget _buildCompactProductCard(Product product) {
+    return GestureDetector(
+      onTap: () => _navigateToProductDetail(product),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.white,
+          borderRadius: BorderRadius.circular(AppConstants.radiusSM),
+          border: Border.all(
+            color: AppTheme.borderGray.withValues(alpha: 0.4),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image
+            Expanded(
+              flex: 6,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppConstants.radiusSM),
+                ),
+                child: product.imageUrls.isNotEmpty
+                    ? Image.network(
+                        product.imageUrls.first.startsWith('http')
+                            ? product.imageUrls.first
+                            : '${AppConfig.uploadsBaseUrl}/${product.imageUrls.first}',
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => _imagePlaceholder(),
+                      )
+                    : _imagePlaceholder(),
+              ),
+            ),
+
+            // Info
+            Expanded(
+              flex: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      product.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.darkBlue,
+                        height: 1.2,
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            '₱${product.price.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              color: AppTheme.primaryBlue,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => _addToCart(product),
+                          child: Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryBlue,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Icon(
+                              Icons.add_shopping_cart,
+                              size: 11,
+                              color: AppTheme.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _imagePlaceholder() {
+    return Container(
+      color: AppTheme.lightGray,
+      child: const Center(
+        child: Icon(Icons.image_outlined, color: AppTheme.mediumGray, size: 20),
+      ),
+    );
+  }
+
+  Widget _buildPagination(ProductProvider productProvider) {
+    final total = _totalPages;
+    if (total <= 1) return const SizedBox.shrink();
+
+    // Show at most 5 page buttons around current page
+    final List<int> pages = [];
+    final start = (_currentPage - 2).clamp(1, total);
+    final end = (_currentPage + 2).clamp(1, total);
+    for (int i = start; i <= end; i++) {
+      pages.add(i);
+    }
+
+    return Column(
+      children: [
+        const Divider(height: 1, color: AppTheme.borderGray),
+        const SizedBox(height: 12),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            // Prev
+            if (_currentPage > 1)
+              _pageButton('‹', () => setState(() => _currentPage--)),
+
+            // Page numbers
+            for (final p in pages)
+              _pageButton(
+                '$p',
+                () => setState(() => _currentPage = p),
+                isActive: p == _currentPage,
+              ),
+
+            // Next
+            if (_currentPage < total)
+              _pageButton('›', () => setState(() => _currentPage++)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Page $_currentPage of $total',
+          style: const TextStyle(
+            fontSize: 11,
+            color: AppTheme.mediumGray,
+          ),
+        ),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _pageButton(String label, VoidCallback onTap, {bool isActive = false}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 34),
+        height: 34,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: isActive ? AppTheme.primaryBlue : AppTheme.white,
+          borderRadius: BorderRadius.circular(AppConstants.radiusSM),
+          border: Border.all(
+            color: isActive ? AppTheme.primaryBlue : AppTheme.borderGray,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+              color: isActive ? AppTheme.white : AppTheme.darkBlue,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Features section (banner + features grid only; partner cards moved to footer) ──
 
   Widget _buildFeaturesSection() {
     return Container(
@@ -452,11 +670,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        FontAwesomeIcons.leaf,
-                        color: AppTheme.successGreen,
-                        size: 24,
-                      ),
+                      Icon(FontAwesomeIcons.leaf, color: AppTheme.successGreen, size: 24),
                       const SizedBox(height: AppConstants.spacingXS),
                       Text(
                         'Eco-Friendly',
@@ -506,56 +720,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          const SizedBox(height: AppConstants.spacingLG),
-
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth >= 600;
-
-              final sellerCard = _buildPartnerActionCard(
-                context,
-                icon: Icons.storefront_outlined,
-                title: 'Become a Seller',
-                subtitle: 'List products and reach more customers.',
-                buttonText: 'Start Selling',
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => SellerAuthScreen()),
-                ),
-              );
-
-              final riderCard = _buildPartnerActionCard(
-                context,
-                icon: Icons.delivery_dining_outlined,
-                title: 'Become a Rider',
-                subtitle: 'Deliver orders and earn flexible income.',
-                buttonText: 'Start Delivering',
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => RiderAuthScreen()),
-                ),
-              );
-
-              if (isWide) {
-                return Row(
-                  children: [
-                    Expanded(child: sellerCard),
-                    const SizedBox(width: AppConstants.spacingMD),
-                    Expanded(child: riderCard),
-                  ],
-                );
-              }
-
-              return Column(
-                children: [
-                  sellerCard,
-                  const SizedBox(height: AppConstants.spacingMD),
-                  riderCard,
-                ],
-              );
-            },
-          ),
-
           const SizedBox(height: AppConstants.spacingXL),
 
           // Features Grid
@@ -576,6 +740,29 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// 2-column grid used for featured products and search results.
+  Widget _buildProductGrid(List<Product> products) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.75,
+        crossAxisSpacing: AppConstants.spacingMD,
+        mainAxisSpacing: AppConstants.spacingMD,
+      ),
+      itemCount: products.length,
+      itemBuilder: (context, index) {
+        final product = products[index];
+        return ProductCard(
+          product: product,
+          onTap: () => _navigateToProductDetail(product),
+          onAddToCart: () => _addToCart(product),
+        );
+      },
     );
   }
 
@@ -620,85 +807,170 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildPartnerActionCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String buttonText,
-    required VoidCallback onPressed,
-  }) {
+  // ── Footer ────────────────────────────────────────────────────────────────
+
+  Widget _buildFooter() {
     return Container(
-      padding: const EdgeInsets.all(AppConstants.spacingLG),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(
+        AppConstants.spacingLG,
+        AppConstants.spacingXL,
+        AppConstants.spacingLG,
+        AppConstants.spacingXXL,
+      ),
       decoration: BoxDecoration(
-        color: AppTheme.white,
-        borderRadius: BorderRadius.circular(AppConstants.radiusLG),
-        border: Border.all(color: AppTheme.borderGray.withValues(alpha: 0.7)),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.darkBlue.withValues(alpha: 0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+        color: AppTheme.lightGray,
+        border: Border(
+          top: BorderSide(color: AppTheme.borderGray.withValues(alpha: 0.5)),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Partner CTA row
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 500;
+
+              final sellerBtn = _buildFooterPartnerButton(
+                icon: Icons.storefront_outlined,
+                label: 'Become a Seller',
+                sublabel: 'List products & reach customers',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => SellerAuthScreen()),
+                ),
+              );
+
+              final riderBtn = _buildFooterPartnerButton(
+                icon: Icons.delivery_dining_outlined,
+                label: 'Become a Rider',
+                sublabel: 'Deliver orders & earn flexibly',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => RiderAuthScreen()),
+                ),
+              );
+
+              if (isWide) {
+                return Row(
+                  children: [
+                    Expanded(child: sellerBtn),
+                    const SizedBox(width: AppConstants.spacingMD),
+                    Expanded(child: riderBtn),
+                  ],
+                );
+              }
+              return Column(
+                children: [
+                  sellerBtn,
+                  const SizedBox(height: AppConstants.spacingMD),
+                  riderBtn,
+                ],
+              );
+            },
+          ),
+
+          const SizedBox(height: AppConstants.spacingXL),
+          const Divider(color: AppTheme.borderGray),
+          const SizedBox(height: AppConstants.spacingMD),
+
+          // Brand line
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                  color: AppTheme.primaryBlue,
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Text('👶', style: TextStyle(fontSize: 12)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Happy Hands',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: AppTheme.darkBlue,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Your trusted baby essentials store',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppTheme.mediumGray,
+              fontSize: 11,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppConstants.radiusMD),
-            ),
-            child: Icon(icon, color: AppTheme.primaryBlue),
+    );
+  }
+
+  Widget _buildFooterPartnerButton({
+    required IconData icon,
+    required String label,
+    required String sublabel,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppConstants.spacingMD),
+        decoration: BoxDecoration(
+          color: AppTheme.white,
+          borderRadius: BorderRadius.circular(AppConstants.radiusMD),
+          border: Border.all(
+            color: AppTheme.primaryBlue.withValues(alpha: 0.3),
           ),
-          const SizedBox(height: AppConstants.spacingMD),
-          Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: AppTheme.darkBlue,
-              fontWeight: FontWeight.w800,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppConstants.radiusSM),
+              ),
+              child: Icon(icon, color: AppTheme.primaryBlue, size: 20),
             ),
-          ),
-          const SizedBox(height: AppConstants.spacingXS),
-          Text(
-            subtitle,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            const SizedBox(width: AppConstants.spacingMD),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: AppTheme.primaryBlue,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(
+                    sublabel,
+                    style: const TextStyle(
+                      color: AppTheme.mediumGray,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
               color: AppTheme.mediumGray,
-              height: 1.4,
             ),
-          ),
-          const SizedBox(height: AppConstants.spacingMD),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onPressed,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryBlue,
-                foregroundColor: AppTheme.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.radiusLG),
-                ),
-              ),
-              child: Text(
-                buttonText,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

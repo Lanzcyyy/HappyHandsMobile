@@ -18,18 +18,20 @@ import 'firebase_options.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Firebase is still used for Realtime Database (product data).
+  // Authentication now goes through Flask/MySQL only.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(
     MultiProvider(
       providers: [
-        // Firebase database service (non-ChangeNotifier)
+        // Firebase Realtime Database service (products/categories only)
         Provider(create: (_) => FirebaseDatabaseService()),
 
-        // Auth
+        // MySQL/Flask auth — no Firebase Auth
         ChangeNotifierProvider(create: (_) => AuthProvider()),
 
-        // Flask API client (proxied through auth token)
+        // Flask API client — uses JWT from AuthProvider
         ProxyProvider<AuthProvider, ApiClient>(
           update: (context, authProvider, previous) => ApiClient(
             tokenProvider: () async => authProvider.getIdToken(),
@@ -48,7 +50,7 @@ Future<void> main() async {
           )..fetch(),
         ),
 
-        // Legacy product provider (used by home_screen, product_detail, etc.)
+        // Product provider used by home/detail screens (mock + API)
         ChangeNotifierProvider(create: (_) => ProductProvider()),
 
         ChangeNotifierProvider(create: (_) => CartProvider()),

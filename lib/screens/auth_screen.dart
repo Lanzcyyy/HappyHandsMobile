@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../widgets/custom_app_bar.dart';
 import '../core/theme/app_theme.dart';
 import '../core/constants/app_constants.dart';
+import '../core/config/app_config.dart';
 
 enum AuthRole { user, seller, rider }
 
@@ -140,6 +141,15 @@ class AuthHeader extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: AppTheme.mediumGray,
             fontSize: 13,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'API: ${AppConfig.apiBaseUrl}',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: AppTheme.mediumGray.withValues(alpha: 0.6),
+            fontSize: 10,
           ),
           textAlign: TextAlign.center,
         ),
@@ -844,72 +854,22 @@ class _AuthScreenState extends State<AuthForm> {
   }
 
   void _showForgotPasswordDialog() {
-    final emailController = TextEditingController();
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reset Password'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Enter your email address to receive a password reset link.',
-            ),
-            const SizedBox(height: AppConstants.spacingMD),
-            TextFormField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: 'Email Address',
-                hintText: 'Enter your email',
-                prefixIcon: const Icon(
-                  FontAwesomeIcons.envelope,
-                  color: AppTheme.mediumGray,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.radiusMD),
-                ),
-              ),
-            ),
-          ],
+        content: const Text(
+          'Password reset is not available in the mobile app.\n\n'
+          'Please visit the Happy Hands website to reset your password.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
           ElevatedButton(
-            onPressed: () async {
-              final email = emailController.text.trim();
-              if (email.isNotEmpty) {
-                try {
-                  await context.read<AuthProvider>().resetPassword(email);
-                  if (!context.mounted) return;
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Password reset email sent!'),
-                      backgroundColor: AppTheme.successGreen,
-                      duration: const Duration(seconds: 2),
-                    ),
-                  );
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error: ${e.toString()}'),
-                      backgroundColor: AppTheme.errorRed,
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                }
-              }
-            },
+            onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryBlue,
               foregroundColor: AppTheme.white,
             ),
-            child: const Text('Send'),
+            child: const Text('OK'),
           ),
         ],
       ),
